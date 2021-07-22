@@ -8,7 +8,6 @@
 #include <iostream>
 #include "http_server.h"
 
-
 void home(){
     std::cout << "Hello, World!\n";
 }
