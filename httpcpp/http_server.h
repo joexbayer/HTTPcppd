@@ -59,6 +59,12 @@ struct http_route
     void (*function)();
 };
 
+struct file_s
+{
+    char* content;
+    off_t size;
+};
+
 class http_server /* HTTP server class */
 {
     
@@ -77,6 +83,8 @@ private:
     int create_tcp_socket(uint32_t port);
     void cleanup();
     
+    struct file_s* open_file(const std::string& file);
+    
     struct http_config* config;
     
     struct http_route* routes[MAX_ROUTES];
@@ -84,7 +92,8 @@ private:
     
     int server_socket;
     struct sockaddr_in* server_addr;
-    
+
+    std::string main_header;
 };
 
 

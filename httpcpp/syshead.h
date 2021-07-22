@@ -14,6 +14,9 @@
 #include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/stat.h>
+#include <iostream>
+#include <fstream>
 
 
 #endif /* syshead_h */

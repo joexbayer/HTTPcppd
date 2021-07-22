@@ -29,6 +29,7 @@
 		E1EBC88126A99E90000C3538 /* http_server.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = http_server.cpp; sourceTree = "<group>"; };
 		E1EBC88226A99E90000C3538 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		E1EBC88326A99E90000C3538 /* syshead.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = syshead.h; sourceTree = "<group>"; };
+		E1EBC88726A9A66F000C3538 /* index.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,12 +62,21 @@
 		E1EBC86F26A97B77000C3538 /* httpcpp */ = {
 			isa = PBXGroup;
 			children = (
+				E1EBC88626A9A1D0000C3538 /* www */,
 				E1EBC88126A99E90000C3538 /* http_server.cpp */,
 				E1EBC88026A99E90000C3538 /* http_server.h */,
 				E1EBC88226A99E90000C3538 /* main.cpp */,
 				E1EBC88326A99E90000C3538 /* syshead.h */,
 			);
 			path = httpcpp;
+			sourceTree = "<group>";
+		};
+		E1EBC88626A9A1D0000C3538 /* www */ = {
+			isa = PBXGroup;
+			children = (
+				E1EBC88726A9A66F000C3538 /* index.html */,
+			);
+			path = www;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

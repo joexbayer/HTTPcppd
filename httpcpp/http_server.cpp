@@ -22,10 +22,11 @@
  */
 http_server::http_server(struct http_config user_config)
 {
-    
     struct http_config* config_m = (struct http_config*) malloc( sizeof(struct http_config) );
     config_m->port = user_config.port;
     config_m->debug = user_config.debug;
+    
+    main_header = "Server: HTTPCPPd (Unix)\nContent-Security-Policy: script-src 'unsafe-inline';\n";
     
     config = config_m;
     if(config->debug)
@@ -37,9 +38,61 @@ http_server::http_server(struct http_config user_config)
     
     http_route_counter = 0;
     
+    open_file("index.html");
+    
     std::cout << "HTTP server has been created.\n";
     
+    struct file_s* file = open_file("index.html");
+    printf("%s\n", file->content);
+    
     return;
+}
+
+/*
+ * Function:  open_file
+ * --------------------
+ * Namespace http_server
+ *
+ *  Read give file and return file struct
+ *    Includes content buffer and content size.
+ *
+ *  file: file name as const string
+ *
+ *  struct file_s: file struct with file info
+ *
+ */
+struct file_s* http_server::open_file(const std::string& file){
+    
+    FILE *fp = fopen (file.c_str(), "rb");
+    if ( NULL == fp ) {
+        perror("FILE");
+        exit(EXIT_FAILURE);
+    }
+    int fd = fileno(fp);
+
+    struct stat finfo; /* Get file info */
+    int fs = fstat(fd, &finfo);
+    if(fs == -1){
+        perror("fstat");
+        exit(EXIT_FAILURE);
+    }
+    
+    off_t content_size = finfo.st_size; /* Get content sizes */
+
+    char* content = (char*) malloc(content_size);
+
+    size_t readf = fread(content, content_size, 1, fp); /* read file into buffer */
+    if(readf != 1){
+        exit(EXIT_FAILURE);
+    }
+    
+    struct file_s* file_obj = (struct file_s*) malloc(sizeof(struct file_s)); /* create and fill file struct */
+    file_obj->content = content;
+    file_obj->size = content_size;
+
+    fclose(fp);
+    
+    return file_obj;
 }
 
 
@@ -47,7 +100,7 @@ void http_server::run(){
     
     // TODO: SETUP
     
-    read_handle_loop(); /* Main accept / read event loop */
+    read_handle_loop(); /* Main accept - read event loop */
 }
 
 /*
@@ -151,6 +204,8 @@ void http_server::read_handle_loop()
     }
 
     printf("%s\n", buffer);
+    
+    
 }
 
 /*
