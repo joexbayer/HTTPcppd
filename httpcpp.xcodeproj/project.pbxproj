@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		E1EBC87126A97B77000C3538 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E1EBC87026A97B77000C3538 /* main.cpp */; };
+		E1EBC87B26A97B9A000C3538 /* http_server.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E1EBC87826A97B9A000C3538 /* http_server.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +26,8 @@
 /* Begin PBXFileReference section */
 		E1EBC86D26A97B77000C3538 /* httpcpp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = httpcpp; sourceTree = BUILT_PRODUCTS_DIR; };
 		E1EBC87026A97B77000C3538 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		E1EBC87826A97B9A000C3538 /* http_server.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = http_server.cpp; path = ../../xcode/httpcpp/httpcpp/http_server.cpp; sourceTree = "<group>"; };
+		E1EBC87926A97B9A000C3538 /* http_server.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = http_server.h; path = ../../xcode/httpcpp/httpcpp/http_server.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +60,8 @@
 		E1EBC86F26A97B77000C3538 /* httpcpp */ = {
 			isa = PBXGroup;
 			children = (
+				E1EBC87826A97B9A000C3538 /* http_server.cpp */,
+				E1EBC87926A97B9A000C3538 /* http_server.h */,
 				E1EBC87026A97B77000C3538 /* main.cpp */,
 			);
 			path = httpcpp;
@@ -118,6 +123,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E1EBC87B26A97B9A000C3538 /* http_server.cpp in Sources */,
 				E1EBC87126A97B77000C3538 /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
