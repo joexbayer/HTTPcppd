@@ -1,6 +1,6 @@
 //
 //  main.cpp
-//  simple http server
+//  httpcpp
 //
 //  Created by Joe Bayer on 22/07/2021.
 //
@@ -20,13 +20,11 @@ int main(int argc, const char * argv[]) {
     config.debug = 1;
     
     
-    http_server server;
+    http_server server(config);
     
-    server.add_config(config);
+    server.add_route("/", GET, &home);
     
-    method_t get_method = GET;
-    
-    server.add_route("/", get_method, &home);
+    server.run();
     
     return 0;
 }
