@@ -20,6 +20,7 @@
 #include <signal.h>
 #include <sstream>
 #include <sys/select.h>
+#include <unistd.h>
 
 
 #endif /* syshead_h */

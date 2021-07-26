@@ -30,9 +30,10 @@ static void thread_loop()
             struct thread_job* job = job_queue.front();
             job_queue.pop();
     
-            http_server* test = static_cast<http_server*>(job->context);
-            test->handle_thread_connection(job->connection);
+            http_server* server_context = static_cast<http_server*>(job->context);
+            server_context->handle_thread_connection(job->connection);
             
+            free(job);
         }
     }
     

@@ -275,14 +275,20 @@ void http_server::asign_worker(struct http_connection *connection)
 void http_server::handle_thread_connection(struct http_connection *connection)
 {
     // get content vs header
-    connection->header =
-    connection->content;
+    connection->header = connection->content;
     std::string delimiter = "\r\n\r\n";
     std::string content = connection->content.substr(connection->content.find(delimiter), connection->content.length());
                                                      
     connection->content = content;
 
     parse_connection_header(connection); /* Begin of parse pipeline */
+    
+    
+    //TODO: TO OWN FUNCTION
+    free(connection->client_addr);
+    close(connection->client_socket);
+    delete connection->context;
+    delete connection;
 
 }
 
@@ -303,7 +309,6 @@ void http_server::parse_method_route(struct http_connection* connection){
     
     std::getline(ss, current_word, ' '); // ROUTE
     connection->context->route = current_word;
-    
     std::getline(ss, current_word, ' '); // HTTP VERSION
     
     
@@ -368,8 +373,9 @@ void http_server::parse_connection_header(struct http_connection* connection)
  */
 struct http_connection* http_server::new_http_client()
 {
-    struct http_context* context = (struct http_context*) malloc(sizeof(struct http_context));
-    struct http_connection* connection = (struct http_connection*) malloc(sizeof(struct http_connection));
+    struct http_context* context = new http_context;
+    struct http_connection* connection = new http_connection;
+    
     connection->context = context;
     
     return connection;
