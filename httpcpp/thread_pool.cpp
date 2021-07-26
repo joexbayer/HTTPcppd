@@ -33,7 +33,7 @@ static void thread_loop()
             http_server* server_context = static_cast<http_server*>(job->context);
             server_context->handle_thread_connection(job->connection);
             
-            free(job);
+            delete job;
         }
     }
     

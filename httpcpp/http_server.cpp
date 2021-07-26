@@ -250,7 +250,7 @@ void http_server::read_handle_loop()
  */
 void http_server::asign_worker(struct http_connection *connection)
 {
-    struct thread_job* job = (struct thread_job*) malloc(sizeof(struct thread_job));
+    struct thread_job* job = new thread_job;
     
     job->connection = connection;
     job->context = this;
