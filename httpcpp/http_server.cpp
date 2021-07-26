@@ -7,6 +7,14 @@
 
 #include "http_server.h"
 
+static bool run = true;
+
+void on_exit(){
+    run = false;
+}
+
+
+
 /*
  * Function:  http_server
  * --------------------
@@ -20,11 +28,12 @@
  *  void:
  *
  */
-http_server::http_server(struct http_config user_config)
+http_server::http_server(struct http_config user_config) : worker_pool(user_config.thread_pool_size)
 {
     struct http_config* config_m = (struct http_config*) malloc( sizeof(struct http_config) );
     config_m->port = user_config.port;
     config_m->debug = user_config.debug;
+    config_m->thread_pool_size = user_config.thread_pool_size;
     
     main_header = "Server: HTTPCPPd (Unix)\nContent-Security-Policy: script-src 'unsafe-inline';\n";
     
@@ -38,14 +47,23 @@ http_server::http_server(struct http_config user_config)
     
     http_route_counter = 0;
     
-    open_file("index.html");
-    
     std::cout << "HTTP server has been created.\n";
     
     struct file_s* file = open_file("index.html");
     printf("%s\n", file->content);
     
     return;
+}
+
+http_server::~http_server(){
+    cleanup();
+}
+
+void http_server::run(){
+    
+    // TODO: SETUP
+    
+    read_handle_loop(); /* Main accept - read event loop */
 }
 
 /*
@@ -93,14 +111,6 @@ struct file_s* http_server::open_file(const std::string& file){
     fclose(fp);
     
     return file_obj;
-}
-
-
-void http_server::run(){
-    
-    // TODO: SETUP
-    
-    read_handle_loop(); /* Main accept - read event loop */
 }
 
 /*
@@ -185,27 +195,184 @@ void http_server::cleanup()
  */
 void http_server::read_handle_loop()
 {
-    int socket;
-    int addrlen = sizeof(struct sockaddr_in);
-    struct sockaddr_in* address = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));
-    
-    if ((socket = accept(server_socket, (struct sockaddr *)address, (socklen_t*)&addrlen)) < 0) /* Accept new connection */
+    while(true)
     {
-        perror("accept");
-        exit(EXIT_FAILURE);
+        int client_socket;
+        int addrlen = sizeof(struct sockaddr_in);
+        struct sockaddr_in* address = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));
+        
+        if ((client_socket = accept(server_socket, (struct sockaddr *)address, (socklen_t*)&addrlen)) < 0) /* Accept new connection */
+        {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
+        
+        struct timeval tv;
+        tv.tv_usec = 20.0;
+        fd_set rfds;
+
+        FD_ZERO(&rfds);
+        FD_SET(client_socket, &rfds);
+        int recVal = select(FD_SETSIZE, &rfds, NULL, NULL, &tv);
+        if(recVal == 0)
+            continue;
+        
+        char buffer[HTTP_BUFFER_SIZE] = {0};
+        ssize_t valread = recv(client_socket, buffer, HTTP_BUFFER_SIZE, 0);
+        buffer[HTTP_BUFFER_SIZE-1] = 0;
+
+        if(valread <= 0){
+            return;
+        }
+        
+        std::string temp(buffer);
+        
+        struct http_connection* new_connection = new_http_client();
+        new_connection->client_socket = client_socket;
+        new_connection->client_addr = address;
+        new_connection->content = temp;
+        
+        asign_worker(new_connection);
+    }
+}
+
+/*
+ * Function:  asign_worker
+ * --------------------
+ * Namespace http_server
+ *
+ *  Assign a worker to current new connection.
+ *
+ *  connection: http_connection struct
+ *
+ *  void:
+ *
+ */
+void http_server::asign_worker(struct http_connection *connection)
+{
+    struct thread_job* job = (struct thread_job*) malloc(sizeof(struct thread_job));
+    
+    job->connection = connection;
+    job->context = this;
+    
+    worker_pool.add_job(job);
+    
+}
+
+
+/*
+ * Function:  handle_thread_connection
+ * --------------------
+ * Namespace http_server
+ *
+ *  Entry point for a new threaded http_connection
+ *
+ *  connection: http_connection struct
+ *
+ *  void:
+ *
+ */
+void http_server::handle_thread_connection(struct http_connection *connection)
+{
+    // get content vs header
+    connection->header =
+    connection->content;
+    std::string delimiter = "\r\n\r\n";
+    std::string content = connection->content.substr(connection->content.find(delimiter), connection->content.length());
+                                                     
+    connection->content = content;
+
+    parse_connection_header(connection); /* Begin of parse pipeline */
+
+}
+
+void http_server::add_authorization(std::string u_token){
+    use_authorization = 1;
+    token = u_token;
+}
+
+void http_server::parse_method_route(struct http_connection* connection){
+    
+    std::string route_header = connection->router;
+    
+    std::string current_word;
+    std::stringstream ss(route_header);
+    
+    std::getline(ss, current_word, ' '); // METHOD
+    connection->context->method = get_method(current_word.c_str());
+    
+    std::getline(ss, current_word, ' '); // ROUTE
+    connection->context->route = current_word;
+    
+    std::getline(ss, current_word, ' '); // HTTP VERSION
+    
+    
+    handle_route(connection->context->route, connection->context->method);
+    
+}
+
+/*
+ * Function:  prase_connection_header
+ * --------------------
+ * Namespace http_server
+ *
+ *  Parse the header of current connection
+ *       Parses them on new line and puts each line to headers vector.
+ *       Also get connection, host and cookies.
+ *
+ *  connection: http_connection struct
+ *
+ *  void:
+ *
+ */
+void http_server::parse_connection_header(struct http_connection* connection)
+{
+    std::string current_line;
+    std::stringstream ss(connection->header);
+
+    std::getline(ss, current_line, '\n');
+    connection->router = current_line; /* Router with method and route */
+    
+    while(std::getline(ss, current_line, '\n'))
+    {
+        // TODO: BETTER
+        if(current_line.find("Connection: ") != std::string::npos)
+        {
+            connection->context->connection = current_line;
+        }
+        else if(current_line.find("Host: ") != std::string::npos)
+        {
+            connection->context->host = current_line;
+        }
+        else if(current_line.find("cookie: ") != std::string::npos)
+        {
+            connection->context->cookies = current_line;
+        }
     }
     
-    char buffer[HTTP_BUFFER_SIZE] = {0};
-    ssize_t valread = recv(socket, buffer, HTTP_BUFFER_SIZE, 0);
-    buffer[HTTP_BUFFER_SIZE-1] = 0;
+    parse_method_route(connection);
+}
 
-    if(valread <= 0){
-        return;
-    }
-
-    printf("%s\n", buffer);
+/*
+ * Function:  new_http_client
+ * --------------------
+ * Namespace http_server
+ *
+ *  Malloc new http context and connection.
+ *  Prepare struct for new connection.
+ *
+ *  void:
+ *
+ *  struct http_connection*: new connection struct
+ *
+ */
+struct http_connection* http_server::new_http_client()
+{
+    struct http_context* context = (struct http_context*) malloc(sizeof(struct http_context));
+    struct http_connection* connection = (struct http_connection*) malloc(sizeof(struct http_connection));
+    connection->context = context;
     
-    
+    return connection;
 }
 
 /*
@@ -226,7 +393,7 @@ void http_server::handle_route(const std::string& route, const method_t& method)
     
     for (int i = 0; i < http_route_counter; i++)
     {
-        uint32_t found = routes[i]->route.compare("/");
+        uint32_t found = routes[i]->route.compare(route);
         if(found == 0 && routes[i]->method == method)
         {
             (*(routes[i]->function))(); /* Invoke given route function */
@@ -261,8 +428,34 @@ int http_server::add_route(const std::string& route_name, const method_t& method
     routes[http_route_counter] = route;
     http_route_counter++;
     
-    handle_route("/", method_def);
-    
     return http_route_counter;
     
+}
+
+/*
+ * Function:  http_get_method
+ * --------------------
+ * Parse method string to enum
+ *
+ *  method_string: string of method
+ *
+ *  returns: method_t enum
+ *
+ */
+method_t http_server::get_method(const char* method_string){
+
+
+    if(strcmp(method_string, "GET") == 0){
+        return GET;
+    }
+
+    if(strcmp(method_string, "POST") == 0){
+        return POST;
+    }
+
+    if(strcmp(method_string, "HEAD") == 0){
+        return HEAD;
+    }
+
+    return UNDEFINED;
 }

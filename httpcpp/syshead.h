@@ -17,6 +17,9 @@
 #include <sys/stat.h>
 #include <iostream>
 #include <fstream>
+#include <signal.h>
+#include <sstream>
+#include <sys/select.h>
 
 
 #endif /* syshead_h */
