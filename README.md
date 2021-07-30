@@ -1,3 +1,5 @@
 # HTTP C++
 
-### HTTP server written in C++ serving static files and routes.
+### HTTP RESTful API with routes and serving static files.
+
+#### How to use: 
