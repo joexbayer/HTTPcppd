@@ -16,6 +16,67 @@ void on_exit(){
 
 
 /*
+ * Function:  send_router_view
+ * --------------------
+ * Namespace http_server
+ *
+ *  Sends a list over all routes currently stored, cant be overwritten
+ *
+ *
+ *  std::string: response
+ *
+ */
+std::string http_server::send_router_view()
+{
+    std::string response = "<HTML><body style='text-align:center;'><div style='width:30%;margin:auto;'>  <h2>HTTPccpd route view.</h2><h3>Routes that are currently available: </h3><ul style='text-align:left;'>";
+    
+    for(int i = 0; i < http_route_counter; i++)
+    {
+        response.append("<li><a href='"+routes[i]->route+"'> "+method_names[routes[i]->method]+": -> "+routes[i]->route+"</a></li>");
+    }
+    response.append("</ul></div></body></html>");
+    
+    return response;
+}
+
+/*
+ * Function:  add_contentype
+ * --------------------
+ * Namespace response
+ *
+ *  Set contentype to given type
+ *
+ *  type: content type
+ *
+ *  void:
+ *
+ */
+void response::set_contentype(const std::string& type)
+{
+    std::string new_content_type = "Content-Type: "+type;
+    content_type = new_content_type;
+}
+
+/*
+ * Function:  add_cookie
+ * --------------------
+ * Namespace response
+ *
+ *  Add a cookie with name and values to response
+ *
+ *  cookie_name: name of the cookie
+ *  cookie_value: value of the cookie
+ *
+ *  void:
+ *
+ */
+void response::add_cookie(std::string& cookie_name, std::string& cookie_value)
+{
+    std::string new_cookie = cookie_name +"="+ cookie_value+";";
+    set_cookies.append(new_cookie);
+}
+
+/*
  * Function:  http_server
  * --------------------
  * Namespace http_server
@@ -35,7 +96,7 @@ http_server::http_server(struct http_config user_config) : worker_pool(user_conf
     config_m->debug = user_config.debug;
     config_m->thread_pool_size = user_config.thread_pool_size;
     
-    main_header = "Server: HTTPCPPd (Unix)\nContent-Security-Policy: script-src 'unsafe-inline';\n";
+    main_header = "Server: HTTPcppd (Unix)\nContent-Security-Policy: script-src 'unsafe-inline';\n";
     
     config = config_m;
     if(config->debug)
@@ -46,6 +107,8 @@ http_server::http_server(struct http_config user_config) : worker_pool(user_conf
         std::cout << "Error setting up server TCP socket..\n";
     
     http_route_counter = 0;
+    
+    add_route("/routes", GET, &http_server::send_router_view);
     
     std::cout << "HTTP server has been created.\n";
     
@@ -124,7 +187,6 @@ struct file_s* http_server::open_file(std::string& file){
  */
 int http_server::create_tcp_socket(uint32_t port)
 {
-    
     int http_socket = -1;
     if ((http_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0)
         return -1;
@@ -171,7 +233,6 @@ void http_server::cleanup()
     {
         delete routes[i];
     }
-    
 }
 
 
@@ -204,15 +265,15 @@ void http_server::read_handle_loop()
         
         printf("Connection! \n");
         
-        /*struct timeval tv;
-        tv.tv_usec = 1000;
+        struct timeval tv;
+        tv.tv_sec = 8; /* 8 second recv timout window */
         fd_set rfds;
          
         FD_ZERO(&rfds);
         FD_SET(client_socket, &rfds);
         int recVal = select(FD_SETSIZE, &rfds, NULL, NULL, &tv);
         if(recVal == 0)
-            continue;*/
+            continue;
         
         char buffer[HTTP_BUFFER_SIZE] = {0};
         ssize_t valread = recv(client_socket, buffer, HTTP_BUFFER_SIZE, 0);
@@ -290,12 +351,49 @@ void http_server::handle_thread_connection(struct http_connection *connection)
 
 }
 
-void http_server::add_authorization(std::string u_token){
+void http_server::add_authorization(std::string u_token)
+{
     use_authorization = 1;
     token = u_token;
 }
 
-void http_server::parse_method_route(struct http_connection* connection){
+bool http_server::authorize(struct http_connection* connection)
+{
+    std::string cookies = connection->context->cookies;
+    
+    std::string current_word;
+    std::stringstream ss(cookies);
+    
+    std::getline(ss, current_word, ' ');  // Cookie:
+    while(std::getline(ss, current_word, ' '))
+    {
+        if(current_word.find("token=") != std::string::npos)
+        {
+            
+            std::stringstream ss(current_word);
+            std::string cookie;
+            
+            std::getline(ss, cookie, '='); // cookie name
+            std::getline(ss, cookie, '='); // cookie value
+            std::getline(ss, cookie, ';'); // remove ; at the end
+            
+            cookie = cookie.substr(0, cookie.size()-1); //remove \r
+            
+            if(cookie.compare(token) == 0)
+            {
+                return true;
+            }
+            return false;
+        }
+        
+        std::getline(ss, current_word, ' ');
+    }
+    return false;
+    
+}
+
+void http_server::parse_method_route(struct http_connection* connection)
+{
     
     std::string route_header = connection->router;
     
@@ -309,10 +407,19 @@ void http_server::parse_method_route(struct http_connection* connection){
     connection->context->route = current_word;
     std::getline(ss, current_word, ' '); // HTTP VERSION
     
+    if(use_authorization)
+    {
+        bool authorized = authorize(connection);
+        if(!authorized)
+        {
+            send_error(UNAUTHORIZED, connection);
+            return;
+        }
+        connection->context->authorized = authorized;
+    }
     
-    std::string response_content = handle_route(connection->context->route, connection->context->method);
-    
-    send_response(connection, response_content);
+    std::string response_content = handle_route(connection->context->route, connection->context->method, connection);
+    // TODO: print response_content
 
 }
 
@@ -350,13 +457,44 @@ std::string http_server::static_html(std::string filname){
  */
 void http_server::send_response(struct http_connection* connection, std::string& response){
     
-    std::string header = "HTTP/1.1 200\nContent-Type: text/html\nContent-length: "+ std::to_string(response.size()) + "\n\n";
+    std::string header = "HTTP/1.1 200\nContent-length: "+ std::to_string(response.size()+1) + "\n";
+    
+    header.append(connection->res->content_type); /* Add content type to header */
+    header.append("; charset=utf-8\n");
+     
+    if(connection->res->set_cookies.compare("") != std::string::npos){
+        header.append(connection->res->set_cookies); /* Add cookies if set. */
+        header.append("\n");
+    }
+    header.append("\n");
     
     std::string output;
     output.append(header);
     output.append(response);
     
-    ssize_t n = write(connection->client_socket, output.data(), output.size());
+    ssize_t n = write(connection->client_socket, output.data(), output.size()+1);
+    if(n == 0){
+        std::cout << "[ERROR] Write returned 0.";
+    }
+}
+
+void http_server::send_error(int error_code, struct http_connection* connection)
+{
+    std::string response = "";
+    switch (error_code) {
+        case BAD_REQUEST:
+            response = "HTTP/1.1 400 Bad Request\nDate: Wed, 21 Oct 2015 07:28:00 GMT\n\n";
+            break;
+            
+        case UNAUTHORIZED:
+            response = "HTTP/1.1 401 Unauthorized\nDate: Wed, 21 Oct 2015 07:28:00 GMT\n\n";
+            break;
+        case FORBIDDEN:
+            response = "HTTP/1.1 403 Forbidden\nDate: Wed, 21 Oct 2015 07:28:00 GMT\n\n";
+            break;
+    }
+    
+    ssize_t n = write(connection->client_socket, response.data(), response.size()+1);
     if(n == 0){
         std::cout << "[ERROR] Write returned 0.";
     }
@@ -395,7 +533,7 @@ void http_server::parse_connection_header(struct http_connection* connection)
         {
             connection->context->host = current_line;
         }
-        else if(current_line.find("cookie: ") != std::string::npos)
+        else if(current_line.find("Cookie: ") != std::string::npos)
         {
             connection->context->cookies = current_line;
         }
@@ -440,7 +578,7 @@ struct http_connection* http_server::new_http_client()
  *  void:
  *
  */
-std::string http_server::handle_route(const std::string& route, const method_et& method)
+std::string http_server::handle_route(const std::string& route, const method_et& method, struct http_connection* connection)
 {
     
     for (int i = 0; i < http_route_counter; i++)
@@ -448,9 +586,39 @@ std::string http_server::handle_route(const std::string& route, const method_et&
         uint32_t found = routes[i]->route.compare(route);
         if(found == 0 && routes[i]->method == method)
         {
-            return (*(routes[i]->function))(); /* Invoke given route function */
+            response* new_res = new response;
+            new_res->content_type = "Content-Type: text/html";
+            
+            request* new_req = new request;
+            new_req->cookies = connection->context->cookies;
+            new_req->content = connection->content;
+            new_req->context = connection->context;
+            new_req->connection = connection->context->connection;
+            new_req->route = connection->router;
+            
+            connection->res = new_res;
+            
+            std::string response_content;
+            
+            switch (routes[i]->option) {
+                case WITH_PARAMETER:
+                    response_content = (*(routes[i]->function))(new_req, new_res); /* Invoke given route function */
+                    break;
+                
+                case WITHOUT_PARAMETER:
+                    response_content = (*(routes[i]->function_n))(); /* Invoke given route function */
+                    break;
+                case INTERN:
+                    response_content = send_router_view(); /* Invoke given route function */
+                    break;
+            }
+            
+            send_response(connection, response_content);
+            return response_content;
         }
     }
+    
+    
     std::string not_found = "Nothing here.";
     return not_found;
 }
@@ -464,18 +632,50 @@ std::string http_server::handle_route(const std::string& route, const method_et&
  *
  *  route_name: Name of the route to add.
  *  method_def: Enum of the access method
- *  *user_function: function to call when route is accessed.
+ *  *user_function: function to call when route is accessed. with response and request parameters.
  *
  *  int: number of current routes.
  *
  */
-int http_server::add_route(const std::string& route_name, const method_et& method_def, std::string (*user_function)() )
+int http_server::add_route(const std::string& route_name, const method_et& method_def, std::string (*user_function)(request* req, response* res) )
 {
     
     struct http_route* route = new http_route;
     route->function = user_function;
     route->route = route_name;
     route->method = method_def;
+    route->option = WITH_PARAMETER;
+    
+    routes[http_route_counter] = route;
+    http_route_counter++;
+    
+    return http_route_counter;
+    
+}
+
+int http_server::add_route(const std::string& route_name, const method_et& method_def, std::string (http_server::*user_function)() )
+{
+    struct http_route* route = new http_route;
+    route->function_intern = user_function;
+    route->route = route_name;
+    route->method = method_def;
+    route->option = INTERN;
+    
+    routes[http_route_counter] = route;
+    http_route_counter++;
+    
+    return http_route_counter;
+    
+}
+
+int http_server::add_route(const std::string& route_name, const method_et& method_def, std::string (*user_function)() )
+{
+    
+    struct http_route* route = new http_route;
+    route->function_n = user_function;
+    route->route = route_name;
+    route->method = method_def;
+    route->option = WITHOUT_PARAMETER;
     
     routes[http_route_counter] = route;
     http_route_counter++;

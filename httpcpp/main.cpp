@@ -8,20 +8,29 @@
 #include <iostream>
 #include "http_server.h"
 
-std::string home(){
+std::string home()
+{
+    
+    /* Default content type is text/html */
     
     return http_server::static_html("index.html");
 }
 
-std::string json(){
+std::string json(request* req, response* res)
+{
     
-    std::string response = "{name: \"joe\", age: \"21\"}";
+    res->set_contentype("application/json");
     
-    return response;
+    std::cout << "Sent JSON response!\n";
+    
+    std::string body = "{name: \"joe\", age: \"21\"}";
+    
+    return body;
 }
 
 
-int main(int argc, const char * argv[]) {
+int main(int argc, const char * argv[])
+{
 
     struct http_config config;
     config.port = 8080;
