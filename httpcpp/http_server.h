@@ -13,22 +13,24 @@
 
 #define HTTP_BUFFER_SIZE 8192 // 8KB
 
-//#define CONTEXT getCurrentContext
+// ********** HTTP pipeline stages **********
+#define HTTP_ACCEPTED_CLIENT 0x01
+#define HTTP_ACCEPTED_REQUEST 0x02
+#define HTTP_ASSIGNED_WORKER 0x03
 
 #include "syshead.h"
 #include "thread_pool.hpp"
 
-typedef enum
+typedef enum /* Enum for HTTP access method */
 {
     GET,
     POST,
     HEAD,
     UNDEFINED
 
-} method_t ;
+} method_et ;
 
 // CONNECTION SECTION
-
 struct http_context
 {
     /* User (Identity) TODO */
@@ -37,7 +39,7 @@ struct http_context
     std::string host;
     std::string connection;
     
-    method_t method;
+    method_et method;
     std::string route;
 };
 
@@ -66,8 +68,8 @@ struct http_config /* Config struct, needs to be filled manually or through a co
 struct http_route
 {
     std::string route;
-    method_t method;
-    void (*function)();
+    method_et method;
+    std::string (*function)();
 };
 
 struct file_s
@@ -83,10 +85,12 @@ public:
     http_server(struct http_config user_config );
     ~http_server();
     
-    int add_route(const std::string& route_name, const method_t& method_def, void (*user_function)() );
+    int add_route(const std::string& route_name, const method_et& method_def, std::string (*user_function)() );
     void add_authorization(std::string token);
     void run(); /* Main event handle loop, blocking. */
     void handle_thread_connection(struct http_connection* connection);
+    
+    static std::string static_html(std::string filname);
     
 private:
     void read_handle_loop();
@@ -96,14 +100,16 @@ private:
     //pipeline
     void parse_connection_header(struct http_connection* connection);
     void parse_method_route(struct http_connection* connection);
-    void handle_route(const std::string& route, const method_t& method);
+    std::string handle_route(const std::string& route, const method_et& method);
+    void send_response(struct http_connection* connection, std::string& response);
     
-    struct file_s* open_file(const std::string& file);
+    static struct file_s* open_file(std::string& file);
+    
     struct http_connection* new_http_client();
     
-    method_t get_method(const char* method_string);
+    method_et get_method(const char* method_string);
     
-    void asign_worker(struct http_connection* connection);
+    void assign_worker(struct http_connection* connection);
 
 private:
     struct http_config* config;

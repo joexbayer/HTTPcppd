@@ -8,9 +8,18 @@
 #include <iostream>
 #include "http_server.h"
 
-void home(){
-    std::cout << "Hello, World!\n";
+std::string home(){
+    
+    return http_server::static_html("index.html");
 }
+
+std::string json(){
+    
+    std::string response = "{name: \"joe\", age: \"21\"}";
+    
+    return response;
+}
+
 
 int main(int argc, const char * argv[]) {
 
@@ -19,9 +28,9 @@ int main(int argc, const char * argv[]) {
     config.debug = 1;
     config.thread_pool_size = 10;
     
-    
     http_server server(config);
     server.add_route("/", GET, &home);
+    server.add_route("/json", GET, &json);
     server.add_authorization("secret-token");
     
     server.run();

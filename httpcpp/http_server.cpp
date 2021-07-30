@@ -30,7 +30,7 @@ void on_exit(){
  */
 http_server::http_server(struct http_config user_config) : worker_pool(user_config.thread_pool_size)
 {
-    struct http_config* config_m = (struct http_config*) malloc( sizeof(struct http_config) );
+    struct http_config* config_m = new http_config;
     config_m->port = user_config.port;
     config_m->debug = user_config.debug;
     config_m->thread_pool_size = user_config.thread_pool_size;
@@ -48,9 +48,6 @@ http_server::http_server(struct http_config user_config) : worker_pool(user_conf
     http_route_counter = 0;
     
     std::cout << "HTTP server has been created.\n";
-    
-    struct file_s* file = open_file("index.html");
-    printf("%s\n", file->content);
     
     return;
 }
@@ -79,7 +76,7 @@ void http_server::run(){
  *  struct file_s: file struct with file info
  *
  */
-struct file_s* http_server::open_file(const std::string& file){
+struct file_s* http_server::open_file(std::string& file){
     
     FILE *fp = fopen (file.c_str(), "rb");
     if ( NULL == fp ) {
@@ -132,7 +129,7 @@ int http_server::create_tcp_socket(uint32_t port)
     if ((http_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0)
         return -1;
 
-    struct sockaddr_in* address = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));
+    struct sockaddr_in* address = new sockaddr_in;
     address->sin_family = AF_INET;
     address->sin_addr.s_addr = INADDR_ANY;
     address->sin_port = htons( static_cast<int>(port) );
@@ -167,16 +164,14 @@ int http_server::create_tcp_socket(uint32_t port)
  */
 void http_server::cleanup()
 {
-    free(config);
-    free(server_addr);
+    delete config;
+    delete server_addr;
     
     for (int i = 0; i < http_route_counter; i++)
     {
-        free(routes[i]);
+        delete routes[i];
     }
     
-    if(config->debug)
-        std::cout << "All used memory has been freed.\n";
 }
 
 
@@ -199,7 +194,7 @@ void http_server::read_handle_loop()
     {
         int client_socket;
         int addrlen = sizeof(struct sockaddr_in);
-        struct sockaddr_in* address = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));
+        struct sockaddr_in* address = new sockaddr_in;
         
         if ((client_socket = accept(server_socket, (struct sockaddr *)address, (socklen_t*)&addrlen)) < 0) /* Accept new connection */
         {
@@ -207,15 +202,17 @@ void http_server::read_handle_loop()
             exit(EXIT_FAILURE);
         }
         
-        struct timeval tv;
-        tv.tv_usec = 20.0;
+        printf("Connection! \n");
+        
+        /*struct timeval tv;
+        tv.tv_usec = 1000;
         fd_set rfds;
-
+         
         FD_ZERO(&rfds);
         FD_SET(client_socket, &rfds);
         int recVal = select(FD_SETSIZE, &rfds, NULL, NULL, &tv);
         if(recVal == 0)
-            continue;
+            continue;*/
         
         char buffer[HTTP_BUFFER_SIZE] = {0};
         ssize_t valread = recv(client_socket, buffer, HTTP_BUFFER_SIZE, 0);
@@ -232,12 +229,13 @@ void http_server::read_handle_loop()
         new_connection->client_addr = address;
         new_connection->content = temp;
         
-        asign_worker(new_connection);
+        printf("Assigned worker!\n");
+        assign_worker(new_connection);
     }
 }
 
 /*
- * Function:  asign_worker
+ * Function:  assign_worker
  * --------------------
  * Namespace http_server
  *
@@ -248,7 +246,7 @@ void http_server::read_handle_loop()
  *  void:
  *
  */
-void http_server::asign_worker(struct http_connection *connection)
+void http_server::assign_worker(struct http_connection *connection)
 {
     struct thread_job* job = new thread_job;
     
@@ -285,8 +283,8 @@ void http_server::handle_thread_connection(struct http_connection *connection)
     
     
     //TODO: TO OWN FUNCTION
-    free(connection->client_addr);
     close(connection->client_socket);
+    delete connection->client_addr;
     delete connection->context;
     delete connection;
 
@@ -312,8 +310,56 @@ void http_server::parse_method_route(struct http_connection* connection){
     std::getline(ss, current_word, ' '); // HTTP VERSION
     
     
-    handle_route(connection->context->route, connection->context->method);
+    std::string response_content = handle_route(connection->context->route, connection->context->method);
     
+    send_response(connection, response_content);
+
+}
+
+/*
+ * Function:  static_html
+ * --------------------
+ * Namespace http_server
+ *
+ *  Returns the content of a static html file
+ *
+ *  filname: string filename of html
+ *
+ *  std::string: file content
+ *
+ */
+std::string http_server::static_html(std::string filname){
+    
+    struct file_s* file = open_file(filname);
+    
+    return (file->content);
+}
+
+/*
+ * Function:  send_response
+ * --------------------
+ * Namespace http_server
+ *
+ *  Format and send the user given response to the current client socket.
+ *
+ *  connection: http_connection struct
+ *  response: string response from user.
+ *
+ *  void:
+ *
+ */
+void http_server::send_response(struct http_connection* connection, std::string& response){
+    
+    std::string header = "HTTP/1.1 200\nContent-Type: text/html\nContent-length: "+ std::to_string(response.size()) + "\n\n";
+    
+    std::string output;
+    output.append(header);
+    output.append(response);
+    
+    ssize_t n = write(connection->client_socket, output.data(), output.size());
+    if(n == 0){
+        std::cout << "[ERROR] Write returned 0.";
+    }
 }
 
 /*
@@ -394,7 +440,7 @@ struct http_connection* http_server::new_http_client()
  *  void:
  *
  */
-void http_server::handle_route(const std::string& route, const method_t& method)
+std::string http_server::handle_route(const std::string& route, const method_et& method)
 {
     
     for (int i = 0; i < http_route_counter; i++)
@@ -402,11 +448,11 @@ void http_server::handle_route(const std::string& route, const method_t& method)
         uint32_t found = routes[i]->route.compare(route);
         if(found == 0 && routes[i]->method == method)
         {
-            (*(routes[i]->function))(); /* Invoke given route function */
-            return;
+            return (*(routes[i]->function))(); /* Invoke given route function */
         }
     }
-
+    std::string not_found = "Nothing here.";
+    return not_found;
 }
 
 /*
@@ -423,10 +469,10 @@ void http_server::handle_route(const std::string& route, const method_t& method)
  *  int: number of current routes.
  *
  */
-int http_server::add_route(const std::string& route_name, const method_t& method_def, void (*user_function)() )
+int http_server::add_route(const std::string& route_name, const method_et& method_def, std::string (*user_function)() )
 {
     
-    struct http_route* route = (struct http_route* ) malloc(sizeof(struct http_route));
+    struct http_route* route = new http_route;
     route->function = user_function;
     route->route = route_name;
     route->method = method_def;
@@ -445,10 +491,10 @@ int http_server::add_route(const std::string& route_name, const method_t& method
  *
  *  method_string: string of method
  *
- *  returns: method_t enum
+ *  returns: method_et enum
  *
  */
-method_t http_server::get_method(const char* method_string){
+method_et http_server::get_method(const char* method_string){
 
 
     if(strcmp(method_string, "GET") == 0){
