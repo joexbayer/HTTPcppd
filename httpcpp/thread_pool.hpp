@@ -15,7 +15,7 @@
 #include <thread>
 #include <chrono>
 
-#define THREAD_POOL_SIZE 10
+#define THREAD_POOL_SIZE 100
 
 struct thread_job
 {
