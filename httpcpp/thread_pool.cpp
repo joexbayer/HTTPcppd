@@ -47,7 +47,7 @@ static void thread_loop()
             if(server_context->config->debug)
             {
                 size_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
-                std::string out = "Assigned Job to thread ("+std::to_string(threadID)+"). Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +" threads.";
+                std::string out = "[DEBUG] Assigned Job to thread ("+std::to_string(threadID)+"). Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +" threads.";
                 std::cout << out << std::endl;
             }
         
@@ -62,7 +62,7 @@ static void thread_loop()
             if(server_context->config->debug)
             {
                 size_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
-                std::string out = "Job finished on thread ("+std::to_string(threadID)+"). Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +".";
+                std::string out = "[DEBUG] Job finished on thread ("+std::to_string(threadID)+"). Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +".";
                 std::cout << out << std::endl;
             }
         }

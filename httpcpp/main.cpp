@@ -21,7 +21,7 @@ int main(int argc, const char * argv[])
     /* Create new http server based on config. */
     http_server app(config);
     
-    /* Route example without request and reponse parameters */
+    /* Route example without request and response parameters */
     app.route("/", GET, [](){
         return http_server::static_html("index.html");
     });

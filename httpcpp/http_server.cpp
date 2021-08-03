@@ -28,11 +28,21 @@ void on_exit(){
  */
 std::string http_server::send_router_view()
 {
-    std::string response = "<HTML><body style='text-align:center;'><div style='width:30%;margin:auto;'>  <h2>HTTPccpd route view.</h2><h3>Routes that are currently available: </h3><ul style='text-align:left;'>";
+    std::string response =
+        "<HTML><head></head> \
+    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css\" integrity=\"sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC\" crossorigin=\"anonymous\">                                                  \
+        <nav class=\"navbar navbar-light bg-light\">                                \
+        <a class=\"navbar-brand\" href=\"#\">                                       \
+    <img src=\"/favicon.ico\" width=\"30\" height=\"30\" class=\"d-inline-block align-top\" alt=\"\">    \
+        HTTPccpd - route view.</a>                                                                \
+        </nav>                                                                      \
+        <body style='text-align:center;'><div style='width:30%;margin:auto;'>       \
+        \
+        <h3>Routes that are currently available: </h3><ul class=\"list-group\" style='text-align:left;'>";
     
     for(int i = 0; i < http_route_counter; i++)
     {
-        response.append("<li><a href='"+routes[i]->route+"'> "+method_names[routes[i]->method]+": -> "+routes[i]->route+"</a></li>");
+        response.append("<li class=\"list-group-item\"><a href='"+routes[i]->route+"'> "+method_names[routes[i]->method]+":                  "+routes[i]->route+"</a></li>");
     }
     response.append("</ul></div></body></html>");
     
@@ -562,7 +572,7 @@ void http_server::send_response(struct http_connection* connection, std::string&
     header.append("; charset=utf-8\n");
     
     if(connection->context->keep_alive)
-        //header.append("Connection: keep-alive\n");
+        header.append("Connection: keep-alive\n");
      
     if(connection->res->set_cookies.compare("") != std::string::npos)
     {
