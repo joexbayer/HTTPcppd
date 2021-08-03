@@ -18,7 +18,6 @@ int main(int argc, const char * argv[])
     config.thread_pool_size = 10;
     config.favicon = "favicon.ico";
     
-    
     /* Create new http server based on config. */
     http_server app(config);
     

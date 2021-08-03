@@ -10,6 +10,7 @@
 
 #include "syshead.h"
 #include "thread_pool.hpp"
+#include "timer.hpp"
 
 #define MAX_ROUTES 50
 #define MAX_CONNECTIONS 10
@@ -46,18 +47,6 @@ enum function_option /* Function option for variable parameters */
 };
 
 
-typedef struct request /* http request given to user defined function */
-{
-    std::string cookies;
-    std::string content;
-    std::string route;
-    std::string connection;
-    
-    struct http_context* context;
-    
-} request;
-
-
 typedef struct response /* http request given to user defined function */
 {
     std::string content_type;
@@ -70,7 +59,7 @@ typedef struct response /* http request given to user defined function */
 
 
 // CONNECTION SECTION
-struct http_context
+typedef struct http_context
 {
     /* User (Identity) TODO */
     
@@ -83,7 +72,7 @@ struct http_context
     
     method_et method;
     std::string route;
-};
+} request;
 
 struct http_connection
 {
@@ -140,6 +129,9 @@ public:
     
     static std::string static_html(std::string filname);
     
+public:
+    struct http_config* config;
+    
 private:
     void read_handle_loop();
     int create_tcp_socket(uint32_t port);
@@ -167,7 +159,6 @@ private:
     void send_favicon(struct http_connection* connection);
 
 private:
-    struct http_config* config;
     struct http_route* routes[MAX_ROUTES];
     int http_route_counter;
     

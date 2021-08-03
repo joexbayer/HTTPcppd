@@ -25,6 +25,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		E1B7652626B91AE100DEBD4B /* timer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = timer.hpp; sourceTree = "<group>"; };
 		E1C875F226AEA237002A7FDD /* thread_pool.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = thread_pool.cpp; sourceTree = "<group>"; };
 		E1C875F326AEA237002A7FDD /* thread_pool.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = thread_pool.hpp; sourceTree = "<group>"; };
 		E1EBC86D26A97B77000C3538 /* httpcpp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = httpcpp; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -72,6 +73,7 @@
 				E1EBC88326A99E90000C3538 /* syshead.h */,
 				E1C875F226AEA237002A7FDD /* thread_pool.cpp */,
 				E1C875F326AEA237002A7FDD /* thread_pool.hpp */,
+				E1B7652626B91AE100DEBD4B /* timer.hpp */,
 			);
 			path = httpcpp;
 			sourceTree = "<group>";

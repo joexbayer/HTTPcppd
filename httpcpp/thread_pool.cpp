@@ -9,6 +9,12 @@
 
 // threading basic setup
 static std::mutex queue_mutex;
+
+static std::mutex active_threads_mutex;
+
+int active_threads = 0;
+int total_threads = 0;
+
 static std::condition_variable condition;
 static std::queue<thread_job*> job_queue;
 
@@ -29,15 +35,40 @@ static void thread_loop()
             
             struct thread_job* job = job_queue.front();
             job_queue.pop();
+            
+            queue_mutex.unlock(); /* Unlock queue, TODO: put in scope? */
     
+            active_threads_mutex.lock();
+            active_threads++;
+            active_threads_mutex.unlock();
+            
             http_server* server_context = static_cast<http_server*>(job->context);
+            
+            if(server_context->config->debug)
+            {
+                size_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
+                std::string out = "Assigned Job to thread ("+std::to_string(threadID)+"). Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +" threads.";
+                std::cout << out << std::endl;
+            }
+        
             server_context->handle_thread_connection(job->connection);
+        
+            active_threads_mutex.lock();
+            active_threads--;
+            active_threads_mutex.unlock();
             
             delete job;
+            
+            if(server_context->config->debug)
+            {
+                size_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
+                std::string out = "Job finished on thread ("+std::to_string(threadID)+"). Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +".";
+                std::cout << out << std::endl;
+            }
         }
     }
     
-    std::cout << std::this_thread::get_id() << "\n";
+    std::cout << std::this_thread::get_id() << std::endl;
 }
 
 
@@ -62,6 +93,7 @@ thread_pool::thread_pool(int pool_size)
         pool_size = THREAD_POOL_SIZE;
     }
     size = pool_size;
+    total_threads = pool_size;
     
     for (int i = 0; i < pool_size; i++)
     {
@@ -106,7 +138,8 @@ void thread_pool::add_job(struct thread_job* job)
         std::unique_lock<std::mutex> lock(queue_mutex);
         job_queue.push(job);
     }
-
+    
     condition.notify_one();
+    
 }
 

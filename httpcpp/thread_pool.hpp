@@ -14,6 +14,7 @@
 #include <condition_variable>
 #include <thread>
 #include <chrono>
+#include <unistd.h>
 
 #define THREAD_POOL_SIZE 100
 
