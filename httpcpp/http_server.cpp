@@ -82,7 +82,7 @@ void response::set_contentype(const std::string& type)
  */
 void response::add_cookie(std::string& cookie_name, std::string& cookie_value)
 {
-    std::string new_cookie = cookie_name +"="+ cookie_value+";";
+    std::string new_cookie = " "+cookie_name +"="+ cookie_value+";";
     set_cookies.append(new_cookie);
 }
 
@@ -665,7 +665,13 @@ void http_server::send_error(int error_code, struct http_connection* connection)
 
 void http_server::send_redirect(std::string url, struct http_connection* connection)
 {
-    std::string response = "HTTP/1.1 301 Moved Permanently\nConnection: Close\nLocation: "+url+"\n\n";
+    std::string response = "HTTP/1.1 301 Moved Permanently\nConnection: Close\nLocation: "+url+"\n";
+    if(connection->res->set_cookies.compare("") != std::string::npos)
+    {
+        response.append(connection->res->set_cookies);
+        response.append(response+ "\n");
+    }
+    response.append(response+ "\n");
     ssize_t n = write(connection->client_socket, response.data(), response.size()+1);
     if(n == 0){
         std::cout << "[ERROR] Write returned 0.";
@@ -850,9 +856,6 @@ std::string http_server::handle_route(const std::string& route, const method_et&
         if(found == 0 && routes[i]->method == method)
         {
             response* new_res = new response;
-            new_res->content_type = "Content-Type: text/html";
-            new_res->status = 200;
-            new_res->redirect_ = 0;
             
             connection->res = new_res;
             

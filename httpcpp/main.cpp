@@ -55,7 +55,7 @@ int main(int argc, const char * argv[])
         });
         app.route("/example?[username, password]", POST, [](request* req, response* res){
             
-            std::cout << req->params["username"] + " : " + req->params["password"] <<std::endl;
+            res->add_cookie(req->params["username"], req->params["password"]);
             
             res->redirect("/");
         });

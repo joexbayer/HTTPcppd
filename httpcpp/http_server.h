@@ -57,6 +57,14 @@ typedef struct response /* http request given to user defined function */
     std::string redirect_url;
     int redirect_;
     
+    response()
+    {
+        content_type = "Content-Type: text/html";
+        status = 200;
+        redirect_ = 0;
+        set_cookies = "Set-Cookie: ";
+    }
+    
     void send(std::string content);
     void redirect(std::string url);
     void set_contentype(const std::string& type);
