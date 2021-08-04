@@ -202,6 +202,7 @@ struct http_route
     method_et method;
     
     std::string params;
+    int has_params;
     
     enum function_option option;
     void (*function)(request* req, response* res); // WITH PARAMETER

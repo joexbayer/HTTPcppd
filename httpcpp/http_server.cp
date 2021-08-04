@@ -31,28 +31,16 @@ std::string http_server::send_router_view()
     
     
     std::string response =
-        "<HTML> \
-            <head> \
-                <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css' integrity='sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC' crossorigin='anonymous'>                                                                        \
-            </head>                                                                                                 \
-            <nav class='navbar navbar-light bg-light'>                                                              \
-            <a class='navbar-brand' href='#'>                                                                       \
-                <img src='favicon.ico' width='30' height='30' class='d-inline-block align-top'>                     \
-                HTTPccpd - route view.                                                                              \
-            </a>                                                                                                    \
-        </nav>                                                                                                      \
-        <body style='text-align:center;'><div style='width:60%;margin:auto;'>                                       \
-            <h3>Routes that are currently available: </h3>                                                          \
-            <table class='table table-striped'>                                                                     \
-                <thead>                                                                                             \
-                    <tr>                                                                                            \
-                        <th>Method</th>                                                                             \
-                        <th>Route</th>                                                                              \
-                        <th>Parameters</th>                                                                         \
-                        <th>Action</th>                                                                             \
-                    </tr>                                                                                           \
-                </thead>                                                                                            \
-                <tbody>";
+        "<HTML><head></head> \
+    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css\" integrity=\"sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC\" crossorigin=\"anonymous\">                                                  \
+        <nav class=\"navbar navbar-light bg-light\">                                \
+        <a class=\"navbar-brand\" href=\"#\">                                       \
+    <img src=\"/favicon.ico\" width=\"30\" height=\"30\" class=\"d-inline-block align-top\" alt=\"\">    \
+        HTTPccpd - route view.</a>                                                                \
+        </nav>                                                                      \
+        <body style='text-align:center;'><div style='width:60%;margin:auto;'>       \
+        \
+        <h3>Routes that are currently available: </h3><table class=\"table\"><thead><tr><th>Method</th><th>Route</th><th>Parameters</th><th>Action</th></tr></thead><tbody>";
     
     for(int i = 0; i < http_route_counter; i++)
     {
@@ -60,6 +48,7 @@ std::string http_server::send_router_view()
         std::string raw_input = routes[i]->params;
         std::string input = raw_input.substr(1, routes[i]->params.size()-2); /* Remove [ ] */
         input.erase(remove_if(input.begin(), input.end(), isspace), input.end()); /* Remove spaces */
+        
         std::stringstream ss(input);
         
         response.append("<tr><form method=\""+method_names[routes[i]->method]+"\" action=\""+routes[i]->route+"\"><td>   \
@@ -67,7 +56,7 @@ std::string http_server::send_router_view()
         if(routes[i]->has_params){
             while(getline(ss, param, ','))
             {
-                response.append("<input style='width:50%;' class='input-group col-xs-2' placeholder='"+param+"' type='text' name='"+param+"'>");
+                response.append("<input style='width:50%;' class=\"input-group col-xs-2\" placeholder=\""+param+"\" type=\"text\" name=\""+param+"\">");
             }
         }
         

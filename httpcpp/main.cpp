@@ -22,15 +22,15 @@ int main(int argc, const char * argv[])
         /* Create new http server based on config. */
         http_server app(config);
         
-        /* Route example with static file */
+        /* GET Route example with static file */
         app.route("/", GET, [](request* req, response* res){
             
             res->send(http_server::static_html("index.html"));
             
         });
         
-        /* Route example json response and params */
-        app.route("/json?[age, name]", GET, [](request* req, response* res){
+        /* GET Route example json response and params */
+        app.route("/json?[age]", GET, [](request* req, response* res){
             
             res->set_contentype("application/json");
             /* Use params and return value in json. */
@@ -38,21 +38,7 @@ int main(int argc, const char * argv[])
             
         });
         
-        /* Route example with redirect */
-        app.route("/redirect", GET, [](request* req, response* res){
-            
-            res->redirect("/");
-            
-        });
-        
-        /* POST / GET example */
-        app.route("/example", GET, [](request* req, response* res){
-            res->send("<form method=\"POST\" action=\"/example\"> \
-                          <input placeholder=\"Username\" type=\"text\" name=\"username\"> \
-                          <input placeholder=\"Password\" type=\"password\" name=\"password\">  \
-                          <button>Log in</button> \
-                      </form>");
-        });
+        /* POST example with params and redirect */
         app.route("/example?[username, password]", POST, [](request* req, response* res){
             
             res->add_cookie(req->params["username"], req->params["password"]);
