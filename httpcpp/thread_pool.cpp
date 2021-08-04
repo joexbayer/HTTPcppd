@@ -50,7 +50,6 @@ static void thread_loop()
             }
             active_threads_mutex.unlock();
             
-        
             server_context->handle_thread_connection(job->connection);
         
             active_threads_mutex.lock();

@@ -42,7 +42,7 @@ std::string http_server::send_router_view()
     
     for(int i = 0; i < http_route_counter; i++)
     {
-        response.append("<li class=\"list-group-item\"><a href='"+routes[i]->route+"'> "+method_names[routes[i]->method]+":                  "+routes[i]->route+"</a></li>");
+        response.append("<li class=\"list-group-item\"><a href='"+routes[i]->route+"'> "+method_names[routes[i]->method]+": "+routes[i]->route+"<i> "+routes[i]->params+" </i>  </a></li>");
     }
     response.append("</ul></div></body></html>");
     
@@ -86,6 +86,16 @@ void response::add_cookie(std::string& cookie_name, std::string& cookie_value)
     set_cookies.append(new_cookie);
 }
 
+void response::redirect(std::string url)
+{
+    redirect_ = 1;
+    redirect_url = url;
+}
+
+void response::send(std::string content)
+{
+    response_data = content;
+}
 
 http_config::http_config(int u_port, int u_debug, int u_threads,std::string u_favicon)
 {
@@ -567,11 +577,11 @@ std::string http_server::static_html(std::string filname){
  *  void:
  *
  */
-void http_server::send_response(struct http_connection* connection, std::string& response){
+void http_server::send_response(struct http_connection* connection){
     
     timer t("send_response");
     
-    std::string header = "HTTP/1.1 200\nContent-length: "+ std::to_string(response.size()+1) + "\n";
+    std::string header = "HTTP/1.1 "+ std::to_string(connection->res->status) +"\nContent-length: "+ std::to_string(connection->res->response_data.size()+1) + "\n";
     
     header.append(connection->res->content_type); /* Add content type to header */
     header.append("; charset=utf-8\n");
@@ -588,7 +598,7 @@ void http_server::send_response(struct http_connection* connection, std::string&
     
     std::string output;
     output.append(header);
-    output.append(response);
+    output.append(connection->res->response_data);
     
     ssize_t n = write(connection->client_socket, output.data(), output.size()+1);
     if(n == 0){
@@ -653,6 +663,15 @@ void http_server::send_error(int error_code, struct http_connection* connection)
     }
 }
 
+void http_server::send_redirect(std::string url, struct http_connection* connection)
+{
+    std::string response = "HTTP/1.1 301 Moved Permanently\nConnection: Close\nLocation: "+url+"\n\n";
+    ssize_t n = write(connection->client_socket, response.data(), response.size()+1);
+    if(n == 0){
+        std::cout << "[ERROR] Write returned 0.";
+    }
+}
+
 /*
  * Function:  prase_connection_header
  * --------------------
@@ -700,12 +719,26 @@ void http_server::parse_connection_header(struct http_connection* connection)
         {
             connection->context->cookies = current_line;
         }
+        else if(current_line.find("Content-Type: ") != std::string::npos)
+        {
+            if(current_line.find("application/x-www-form-urlencoded") != std::string::npos)
+            {
+                parse_post_params(connection);
+            }
+        }
     }
     t.~timer();
     parse_router(connection);
     parse_method_route(connection);
 }
 
+void http_server::parse_post_params(struct http_connection* connection)
+{
+    
+    std::string params = connection->content.substr(4, connection->content.size());
+    
+    parse_params(connection, params);
+}
 
 void http_server::parse_router(struct http_connection* connection)
 {
@@ -715,6 +748,10 @@ void http_server::parse_router(struct http_connection* connection)
     std::stringstream ss_params(connection->router);
     if(connection->router.find("?") != std::string::npos)
     {
+        
+        std::string header_params;
+        std::stringstream ss_params(connection->router);
+
         std::getline(ss_params, header_params, ' ');
         std::getline(ss_params, header_params, ' ');
         
@@ -723,30 +760,39 @@ void http_server::parse_router(struct http_connection* connection)
         std::getline(ss_params_2, header_params, '?');
         std::getline(ss_params_2, header_params, '?'); /* Params in the form, name=value&name2=value2 */
         
-        if(connection->router.find("&") != std::string::npos)
-        {
-            std::stringstream ss_params_many(header_params);
-            while(std::getline(ss_params_many, header_params, '&'))
-            {
-                std::stringstream ss_params_many_value(header_params);
-                std::getline(ss_params_many_value, header_params, '=');
-                std::string name = header_params;
-                std::getline(ss_params_many_value, header_params, '=');
-                std::string value = header_params;
-                
-                connection->context->params[name] = value;
-            }
-            return;
-        }
-        
-        std::stringstream ss_params_many_value(header_params);
-        std::getline(ss_params_many_value, header_params, '=');
-        std::string name = header_params;
-        std::getline(ss_params_many_value, header_params, '=');
-        std::string value = header_params;
-    
-        connection->context->params[name] = value;
+        t.~timer();
+        parse_params(connection, header_params);
     }
+}
+
+void http_server::parse_params(struct http_connection* connection, std::string& raw_params)
+{
+    timer t("parse_params");
+    std::string header_params;
+    
+    if(raw_params.find("&") != std::string::npos)
+    {
+        std::stringstream ss_params_many(raw_params);
+        while(std::getline(ss_params_many, header_params, '&'))
+        {
+            std::stringstream ss_params_many_value(header_params);
+            std::getline(ss_params_many_value, header_params, '=');
+            std::string name = header_params;
+            std::getline(ss_params_many_value, header_params, '=');
+            std::string value = header_params;
+            
+            connection->context->params[name] = value;
+        }
+        return;
+    }
+    
+    std::stringstream ss_params_many_value(raw_params);
+    std::getline(ss_params_many_value, header_params, '=');
+    std::string name = header_params;
+    std::getline(ss_params_many_value, header_params, '=');
+    std::string value = header_params;
+
+    connection->context->params[name] = value;
 }
 
 /*
@@ -805,29 +851,34 @@ std::string http_server::handle_route(const std::string& route, const method_et&
         {
             response* new_res = new response;
             new_res->content_type = "Content-Type: text/html";
+            new_res->status = 200;
+            new_res->redirect_ = 0;
             
             connection->res = new_res;
             
             std::string response_content;
             
             switch (routes[i]->option) {
-                case WITH_PARAMETER:
-                    response_content = (*(routes[i]->function))(connection->context, new_res); /* Invoke given route function */
-                    break;
-                
-                case WITHOUT_PARAMETER:
-                    response_content = (*(routes[i]->function_n))(); /* Invoke given route function */
+                case USER_DEFINED:
+                     (*(routes[i]->function))(connection->context, new_res); /* Invoke given route function */
                     break;
                 case INTERN:
                     response_content = send_router_view(); /* Invoke given route function */
+                    new_res->response_data = response_content;
                     break;
             }
             
             t.~timer();
-            send_response(connection, response_content);
+            if(connection->res->redirect_)
+            {
+                send_redirect(connection->res->redirect_url, connection);
+                delete new_res;
+                return response_content;
+                
+            }
+            send_response(connection);
             
             delete new_res;
-            
             return response_content;
         }
     }
@@ -851,14 +902,27 @@ std::string http_server::handle_route(const std::string& route, const method_et&
  *  int: number of current routes.
  *
  */
-int http_server::route(const std::string& route_name, const method_et& method_def, std::string (*user_function)(request* req, response* res) )
+int http_server::route(const std::string& route_name, const method_et& method_def, void (*user_function)(request* req, response* res) )
 {
     
     struct http_route* route = new http_route;
     route->function = user_function;
-    route->route = route_name;
+    if(route_name.find("?") != std::string::npos)
+    {
+        std::string params;
+        std::stringstream ss_params(route_name);
+        
+        std::getline(ss_params, params, '?');
+        route->route = params;
+        std::getline(ss_params, params, '?');
+        route->params = params;
+    }
+    else
+    {
+        route->route = route_name;
+    }
     route->method = method_def;
-    route->option = WITH_PARAMETER;
+    route->option = USER_DEFINED;
     
     routes[http_route_counter] = route;
     http_route_counter++;
@@ -871,25 +935,24 @@ int http_server::add_route(const std::string& route_name, const method_et& metho
 {
     struct http_route* route = new http_route;
     route->function_intern = user_function;
-    route->route = route_name;
+    
+    if(route_name.find("?") != std::string::npos)
+    {
+        std::string params;
+        std::stringstream ss_params(route_name);
+        
+        std::getline(ss_params, params, '?');
+        route->route = params;
+        std::getline(ss_params, params, '?');
+        route->params = params;
+    }
+    else
+    {
+        route->route = route_name;
+    }
+    
     route->method = method_def;
     route->option = INTERN;
-    
-    routes[http_route_counter] = route;
-    http_route_counter++;
-    
-    return http_route_counter;
-    
-}
-
-int http_server::route(const std::string& route_name, const method_et& method_def, std::string (*user_function)() )
-{
-    
-    struct http_route* route = new http_route;
-    route->function_n = user_function;
-    route->route = route_name;
-    route->method = method_def;
-    route->option = WITHOUT_PARAMETER;
     
     routes[http_route_counter] = route;
     http_route_counter++;

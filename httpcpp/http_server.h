@@ -41,8 +41,7 @@ static std::string method_names[4] = {"GET", "POST", "HEAD", "UNDEFINED"};
 
 enum function_option /* Function option for variable parameters */
 {
-    WITH_PARAMETER,
-    WITHOUT_PARAMETER,
+    USER_DEFINED,
     INTERN
 };
 
@@ -51,7 +50,15 @@ typedef struct response /* http request given to user defined function */
 {
     std::string content_type;
     std::string set_cookies;
+    std::string response_data;
     
+    int status;
+    
+    std::string redirect_url;
+    int redirect_;
+    
+    void send(std::string content);
+    void redirect(std::string url);
     void set_contentype(const std::string& type);
     void add_cookie(std::string& cookie_name, std::string& cookie_value);
     
@@ -122,8 +129,7 @@ public:
     http_server(); /* Default constructor, logging off, 10 threads, port 8080  */
     ~http_server();
     
-    int route(const std::string& route_name, const method_et& method_def, std::string (*user_function)(request* req, response* res) );
-    int route(const std::string& route_name, const method_et& method_def, std::string (*user_function)());
+    int route(const std::string& route_name, const method_et& method_def, void (*user_function)(request* req, response* res) );
     int add_route(const std::string& route_name, const method_et& method_def, std::string (http_server::*user_function)());
     
     void authentication(std::string token);
@@ -148,8 +154,11 @@ private:
     void parse_router(struct http_connection* connection);
     bool authenticate(struct http_connection* connection);
     std::string handle_route(const std::string& route, const method_et& method, struct http_connection* connection);
-    void send_response(struct http_connection* connection, std::string& response);
+    void send_response(struct http_connection* connection);
     void send_error(int error_code, struct http_connection* connection);
+    void send_redirect(std::string url, struct http_connection* connection);
+    void parse_post_params(struct http_connection* connection);
+    void parse_params(struct http_connection* connection, std::string& raw_params);
     
     void close_connection(struct http_connection* connection); /* Close client connection. */
     
@@ -184,9 +193,10 @@ struct http_route
     std::string route;
     method_et method;
     
+    std::string params;
+    
     enum function_option option;
-    std::string (*function)(request* req, response* res); // WITH PARAMETER
-    std::string (*function_n)(); // WIHTOUT PARAMETER
+    void (*function)(request* req, response* res); // WITH PARAMETER
     std::string (http_server::*function_intern)(); // INTERNAL FUNCTION
 };
 
