@@ -150,6 +150,7 @@ http_server::http_server() : worker_pool(10)
  */
 void http_server::setup()
 {
+    
     if(config->debug)
         std::cout << "Config file has been added to the server.\n";
     
@@ -303,7 +304,8 @@ void http_server::cleanup()
  */
 void http_server::read_handle_loop()
 {
-    while(true)
+    int requests = 10;
+    while(requests > 0)
     {
         int client_socket;
         int addrlen = sizeof(struct sockaddr_in);
@@ -311,8 +313,8 @@ void http_server::read_handle_loop()
         
         if ((client_socket = accept(server_socket, (struct sockaddr *)address, (socklen_t*)&addrlen)) < 0) /* Accept new connection */
         {
-            perror("accept");
-            exit(EXIT_FAILURE);
+            std::cout << "[WARNING] Error on accept!\n";
+            continue;
         }
         
         struct http_connection* new_connection = new_http_client();
@@ -320,6 +322,7 @@ void http_server::read_handle_loop()
         new_connection->client_addr = address;
         
         assign_worker(new_connection);
+        requests--;
     }
 }
 
@@ -342,7 +345,6 @@ void http_server::assign_worker(struct http_connection *connection)
     job->connection = connection;
     job->context = this;
     
-    std::cout << std::endl;
     worker_pool.add_job(job);
     std::cout << std::endl;
     
@@ -412,7 +414,6 @@ void http_server::handle_thread_connection(struct http_connection *connection)
 
 void http_server::close_connection(struct http_connection* connection)
 {
-    //TODO: TO OWN FUNCTION + KEEP alive.
     close(connection->client_socket);
     delete connection->client_addr;
     delete connection->context; /* New context on keep alive? */
@@ -501,6 +502,10 @@ void http_server::parse_method_route(struct http_connection* connection)
     connection->context->method = get_method(current_word.c_str());
     
     std::getline(ss, current_word, ' '); // ROUTE
+    
+    std::stringstream ss_route_(current_word);
+    std::getline(ss_route_, current_word, '?');
+    
     connection->context->route = current_word;
     std::getline(ss, current_word, ' '); // HTTP VERSION
     
@@ -673,6 +678,7 @@ void http_server::parse_connection_header(struct http_connection* connection)
 
     std::getline(ss, current_line, '\n');
     connection->router = current_line; /* Router with method and route */
+    
     std::cout << connection->router;
     
     while(std::getline(ss, current_line, '\n'))
@@ -696,7 +702,51 @@ void http_server::parse_connection_header(struct http_connection* connection)
         }
     }
     t.~timer();
+    parse_router(connection);
     parse_method_route(connection);
+}
+
+
+void http_server::parse_router(struct http_connection* connection)
+{
+    timer t("parse_router");
+    
+    std::string header_params;
+    std::stringstream ss_params(connection->router);
+    if(connection->router.find("?") != std::string::npos)
+    {
+        std::getline(ss_params, header_params, ' ');
+        std::getline(ss_params, header_params, ' ');
+        
+        std::stringstream ss_params_2(header_params);
+        
+        std::getline(ss_params_2, header_params, '?');
+        std::getline(ss_params_2, header_params, '?'); /* Params in the form, name=value&name2=value2 */
+        
+        if(connection->router.find("&") != std::string::npos)
+        {
+            std::stringstream ss_params_many(header_params);
+            while(std::getline(ss_params_many, header_params, '&'))
+            {
+                std::stringstream ss_params_many_value(header_params);
+                std::getline(ss_params_many_value, header_params, '=');
+                std::string name = header_params;
+                std::getline(ss_params_many_value, header_params, '=');
+                std::string value = header_params;
+                
+                connection->context->params[name] = value;
+            }
+            return;
+        }
+        
+        std::stringstream ss_params_many_value(header_params);
+        std::getline(ss_params_many_value, header_params, '=');
+        std::string name = header_params;
+        std::getline(ss_params_many_value, header_params, '=');
+        std::string value = header_params;
+    
+        connection->context->params[name] = value;
+    }
 }
 
 /*

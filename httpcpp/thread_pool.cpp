@@ -37,34 +37,33 @@ static void thread_loop()
             job_queue.pop();
             
             queue_mutex.unlock(); /* Unlock queue, TODO: put in scope? */
+            
+            http_server* server_context = static_cast<http_server*>(job->context);
     
             active_threads_mutex.lock();
             active_threads++;
-            active_threads_mutex.unlock();
-            
-            http_server* server_context = static_cast<http_server*>(job->context);
-            
             if(server_context->config->debug)
             {
                 size_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
-                std::string out = "[DEBUG] Assigned Job to thread ("+std::to_string(threadID)+"). Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +" threads.";
+                std::string out = "[DEBUG] (Thread:  "+std::to_string(threadID)+") -> Assigned new Job. Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +" threads.";
                 std::cout << out << std::endl;
             }
+            active_threads_mutex.unlock();
+            
         
             server_context->handle_thread_connection(job->connection);
         
             active_threads_mutex.lock();
             active_threads--;
-            active_threads_mutex.unlock();
-            
-            delete job;
-            
             if(server_context->config->debug)
             {
                 size_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
-                std::string out = "[DEBUG] Job finished on thread ("+std::to_string(threadID)+"). Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +".";
+                std::string out = "[DEBUG] (Thread: "+std::to_string(threadID)+") -> Finished Job. Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +" threads.";
                 std::cout << out << std::endl;
             }
+            active_threads_mutex.unlock();
+            
+            delete job;
         }
     }
     

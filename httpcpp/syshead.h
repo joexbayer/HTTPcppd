@@ -21,6 +21,7 @@
 #include <sstream>
 #include <sys/select.h>
 #include <unistd.h>
+#include <map>
 
 
 #endif /* syshead_h */

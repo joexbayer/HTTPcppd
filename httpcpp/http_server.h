@@ -67,6 +67,8 @@ typedef struct http_context
     std::string host;
     std::string connection;
     
+    std::map <std::string, std::string> params;
+    
     bool authorized;
     bool keep_alive;
     
@@ -80,6 +82,7 @@ struct http_connection
     std::string header;
     std::string content;
     std::string router;
+    std::string params_string;
     
     // user response
     response* res;
@@ -142,6 +145,7 @@ private:
     //pipeline
     void parse_connection_header(struct http_connection* connection);
     void parse_method_route(struct http_connection* connection);
+    void parse_router(struct http_connection* connection);
     bool authenticate(struct http_connection* connection);
     std::string handle_route(const std::string& route, const method_et& method, struct http_connection* connection);
     void send_response(struct http_connection* connection, std::string& response);
