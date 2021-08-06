@@ -26,6 +26,7 @@
 
 /* Begin PBXFileReference section */
 		E1B7652626B91AE100DEBD4B /* timer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = timer.hpp; sourceTree = "<group>"; };
+		E1BC5C6226BD201E0092E7EA /* logger.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = logger.hpp; sourceTree = "<group>"; };
 		E1C875F226AEA237002A7FDD /* thread_pool.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = thread_pool.cpp; sourceTree = "<group>"; };
 		E1C875F326AEA237002A7FDD /* thread_pool.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = thread_pool.hpp; sourceTree = "<group>"; };
 		E1EBC86D26A97B77000C3538 /* httpcpp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = httpcpp; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -74,6 +75,7 @@
 				E1C875F226AEA237002A7FDD /* thread_pool.cpp */,
 				E1C875F326AEA237002A7FDD /* thread_pool.hpp */,
 				E1B7652626B91AE100DEBD4B /* timer.hpp */,
+				E1BC5C6226BD201E0092E7EA /* logger.hpp */,
 			);
 			path = httpcpp;
 			sourceTree = "<group>";

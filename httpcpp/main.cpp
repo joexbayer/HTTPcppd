@@ -13,11 +13,11 @@ int main(int argc, const char * argv[])
     /* Scope for http server */
     {
         /* Config file for server */
-        http_config config; /* http_config config(PORT, DEBUG, THREADS, FAVICON); */
+        http_config config; /* http_config config(PORT, DEBUG, THREADS, FAVICON, LOG); */
         config.port = 8080;
-        config.debug = 1;
         config.thread_pool_size = 10;
         config.favicon = "favicon.ico";
+        config.log_level = VERBOSE;
         
         /* Create new http server based on config. */
         http_server app(config);
@@ -29,12 +29,28 @@ int main(int argc, const char * argv[])
             
         });
         
+        /* GET Route example with pre defined function */
+        app.route("/routes", GET, [](request* req, response* res){
+            
+            res->send(req->context->send_router_view());
+            
+        });
+        
         /* GET Route example json response and params */
         app.route("/json?[age]", GET, [](request* req, response* res){
             
             res->set_contentype("application/json");
             /* Use params and return value in json. */
             res->send("{name: \"joe\", age: \"" + req->params["age"] + "\"}");
+            
+        });
+        
+        /* GET Route example json stats resposne */
+        app.route("/stats", GET, [](request* req, response* res){
+            
+            res->set_contentype("application/json");
+            /* Return static stats method for http_server */
+            res->send(req->context->stats());
             
         });
         

@@ -11,6 +11,7 @@
 #include "syshead.h"
 #include "thread_pool.hpp"
 #include "timer.hpp"
+#include "logger.hpp"
 
 #define MAX_ROUTES 50
 #define MAX_CONNECTIONS 10
@@ -41,8 +42,7 @@ static std::string method_names[4] = {"GET", "POST", "HEAD", "UNDEFINED"};
 
 enum function_option /* Function option for variable parameters */
 {
-    USER_DEFINED,
-    INTERN
+    USER_DEFINED
 };
 
 
@@ -74,22 +74,7 @@ typedef struct response /* http request given to user defined function */
 
 
 // CONNECTION SECTION
-typedef struct http_context
-{
-    /* User (Identity) TODO */
-    
-    std::string cookies;
-    std::string host;
-    std::string connection;
-    
-    std::map <std::string, std::string> params;
-    
-    bool authorized;
-    bool keep_alive;
-    
-    method_et method;
-    std::string route;
-} request;
+typedef struct http_context request;
 
 struct http_connection
 {
@@ -113,11 +98,11 @@ struct http_connection
 typedef struct http_config /* Config struct, needs to be filled manually or through a config file */
 {
     int port;
-    int debug;
     int thread_pool_size;
     std::string favicon;
+    enum log_level log_level;
     
-    http_config(int u_port, int u_debug, int u_threads,std::string u_favicon);
+    http_config(int u_port, int u_threads,std::string u_favicon, enum log_level level);
     http_config();
     
 } http_config;
@@ -138,13 +123,15 @@ public:
     ~http_server();
     
     int route(const std::string& route_name, const method_et& method_def, void (*user_function)(request* req, response* res) );
-    int add_route(const std::string& route_name, const method_et& method_def, std::string (http_server::*user_function)());
     
     void authentication(std::string token);
     void run(); /* Main event handle loop, blocking. */
     void handle_thread_connection(struct http_connection* connection);
     
     static std::string static_html(std::string filname);
+    
+    std::string stats();
+    std::string send_router_view();
     
 public:
     struct http_config* config;
@@ -175,8 +162,7 @@ private:
     struct http_connection* new_http_client();
     method_et get_method(const char* method_string);
     void assign_worker(struct http_connection* connection);
-    
-    std::string send_router_view();
+
     void send_favicon(struct http_connection* connection);
 
 private:
@@ -192,9 +178,29 @@ private:
     std::string token;
     
     thread_pool worker_pool;
+    logger log;
     
     std::string main_header;
 };
+
+typedef struct http_context
+{
+    /* User (Identity) TODO */
+    
+    std::string cookies;
+    std::string host;
+    std::string connection;
+    
+    http_server* context;
+    
+    std::map <std::string, std::string> params;
+    
+    bool authorized;
+    bool keep_alive;
+    
+    method_et method;
+    std::string route;
+} request;
 
 struct http_route
 {
@@ -206,7 +212,8 @@ struct http_route
     
     enum function_option option;
     void (*function)(request* req, response* res); // WITH PARAMETER
-    std::string (http_server::*function_intern)(); // INTERNAL FUNCTION
 };
+
+
 
 #endif /* http_server_h */

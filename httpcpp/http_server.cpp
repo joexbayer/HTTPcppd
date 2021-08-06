@@ -28,12 +28,9 @@ void on_exit(){
  */
 std::string http_server::send_router_view()
 {
-    
-    
     std::string response =
-        "<HTML> \
-            <head> \
-                <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css' integrity='sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC' crossorigin='anonymous'>                                                                        \
+        "<HTML>                                                                                                     \
+            <head>                                                                                                  \
             </head>                                                                                                 \
             <nav class='navbar navbar-light bg-light'>                                                              \
             <a class='navbar-brand' href='#'>                                                                       \
@@ -43,7 +40,7 @@ std::string http_server::send_router_view()
         </nav>                                                                                                      \
         <body style='text-align:center;'><div style='width:60%;margin:auto;'>                                       \
             <h3>Routes that are currently available: </h3>                                                          \
-            <table class='table table-striped'>                                                                     \
+            <table style='width:70%;margin:auto;'>                                                                     \
                 <thead>                                                                                             \
                     <tr>                                                                                            \
                         <th>Method</th>                                                                             \
@@ -126,12 +123,12 @@ void response::send(std::string content)
     response_data = content;
 }
 
-http_config::http_config(int u_port, int u_debug, int u_threads,std::string u_favicon)
+http_config::http_config(int u_port, int u_threads,std::string u_favicon, enum log_level level)
 {
     port = u_port;
-    debug = u_debug;
     thread_pool_size = u_threads;
     favicon = u_favicon;
+    log_level = level;
 }
 http_config::http_config(){}
 
@@ -153,8 +150,8 @@ http_server::http_server(struct http_config user_config) : worker_pool(user_conf
     struct http_config* config_m = new http_config;
     config_m->port = user_config.port;
     config_m->favicon = user_config.favicon;
-    config_m->debug = user_config.debug;
     config_m->thread_pool_size = user_config.thread_pool_size;
+    config_m->log_level = user_config.log_level;
     
     main_header = "Server: HTTPcppd (Unix)\nContent-Security-Policy: script-src 'unsafe-inline';\n";
     
@@ -166,9 +163,9 @@ http_server::http_server() : worker_pool(10)
 {
     struct http_config* config_m = new http_config;
     config_m->port = 8080;
-    config_m->debug = 0;
     config_m->thread_pool_size = 10;
     config_m->favicon = "favicon.ico";
+    config_m->log_level = WARNING;
     
     config = config_m;
     setup();
@@ -189,23 +186,26 @@ http_server::http_server() : worker_pool(10)
  */
 void http_server::setup()
 {
+    log.log_level(config->log_level); /* Set log level for logger */
     
-    if(config->debug)
-        std::cout << "Config file has been added to the server.\n";
+    log.log("Config file has been added to the server.\n", VERBOSE);
     
     server_socket = create_tcp_socket(config->port);
     if(server_socket == -1)
-        std::cout << "Error setting up server TCP socket..\n";
+        log.log("Error setting up server TCP socket..\n", ERROR);
     
     http_route_counter = 0;
     
-    add_route("/routes", GET, &http_server::send_router_view);
-    
-    std::cout << "HTTP server has been created.\n";
+    std::cout << "HTTP server has been started.\n";
 }
 
 http_server::~http_server(){
     cleanup();
+}
+
+std::string http_server::stats()
+{
+    return log.to_json(config);
 }
 
 void http_server::run(){
@@ -277,7 +277,7 @@ struct file_s* http_server::open_file(std::string& file){
  */
 int http_server::create_tcp_socket(uint32_t port)
 {
-    timer t("create_tcp_socket");
+    timer t("create_tcp_socket", &log);
     
     int http_socket = -1;
     if ((http_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0)
@@ -301,8 +301,7 @@ int http_server::create_tcp_socket(uint32_t port)
     if (listen(http_socket, MAX_CONNECTIONS) < 0)
         return -1;
     
-    if(config->debug)
-        std::cout << "TCP socket has succesfully been configured.\n";
+    log.log("TCP socket has succesfully been configured.\n", VERBOSE);
     
     return http_socket;
     
@@ -352,7 +351,7 @@ void http_server::read_handle_loop()
         
         if ((client_socket = accept(server_socket, (struct sockaddr *)address, (socklen_t*)&addrlen)) < 0) /* Accept new connection */
         {
-            std::cout << "[WARNING] Error on accept!\n";
+            log.log("Accept on socket failed!", WARNING);
             continue;
         }
         
@@ -386,7 +385,6 @@ void http_server::assign_worker(struct http_connection *connection)
     
     worker_pool.add_job(job);
     std::cout << std::endl;
-    
 }
 
 
@@ -428,7 +426,7 @@ void http_server::handle_thread_connection(struct http_connection *connection)
             break;
         }
     
-        timer t("handle_thread_connection");
+        timer t("handle_thread_connection", &log);
     
         connection->content = std::string(buffer);
         
@@ -480,7 +478,7 @@ void http_server::authentication(std::string u_token)
 bool http_server::authenticate(struct http_connection* connection)
 {
     
-    timer t("authenticate");
+    timer t("authenticate", &log);
     
     std::string cookies = connection->context->cookies;
     
@@ -530,7 +528,7 @@ bool http_server::authenticate(struct http_connection* connection)
  */
 void http_server::parse_method_route(struct http_connection* connection)
 {
-    timer t("parse_method_route");
+    timer t("parse_method_route", &log);
     
     std::string route_header = connection->router;
     
@@ -554,9 +552,12 @@ void http_server::parse_method_route(struct http_connection* connection)
         bool authenticated = authenticate(connection);
         if(!authenticated)
         {
+            log.count("Unauthorized requests");
+            log.log("Request was not autheticated!\n", WARNING);;
             send_error(UNAUTHORIZED, connection);
             return;
         }
+        log.count("Authorized requests");
         connection->context->authorized = authenticated;
     }
     else
@@ -608,17 +609,18 @@ std::string http_server::static_html(std::string filname){
  */
 void http_server::send_response(struct http_connection* connection){
     
-    timer t("send_response");
+    timer t("send_response", &log);
     
     std::string header = "HTTP/1.1 "+ std::to_string(connection->res->status) +"\nContent-length: "+ std::to_string(connection->res->response_data.size()) + "\n";
     
     header.append(connection->res->content_type); /* Add content type to header */
     header.append("; charset=utf-8\n");
+    header.append(main_header);
     
     if(connection->context->keep_alive)
         header.append("Connection: keep-alive\n");
      
-    if(connection->res->set_cookies.compare("") != std::string::npos)
+    if(connection->res->set_cookies.compare("Set-Cookie: ") != std::string::npos)
     {
         header.append(connection->res->set_cookies); /* Add cookies if set. */
         header.append("\n");
@@ -631,7 +633,7 @@ void http_server::send_response(struct http_connection* connection){
     
     ssize_t n = write(connection->client_socket, output.data(), output.size());
     if(n == 0){
-        std::cout << "[ERROR] Write returned 0.";
+        log.log("Write returned 0!", WARNING);
     }
 }
 
@@ -649,7 +651,7 @@ void http_server::send_response(struct http_connection* connection){
  */
 void http_server::send_favicon(struct http_connection* connection)
 {
-    timer t("send_favicon");
+    timer t("send_favicon", &log);
     
     struct file_s* file = open_file(config->favicon);
     
@@ -662,7 +664,7 @@ void http_server::send_favicon(struct http_connection* connection)
     
     ssize_t n = write(connection->client_socket, response, header.size()+file->size);
     if(n == 0){
-        std::cout << "[ERROR] Write returned 0.";
+        log.log("Write returned 0!", WARNING);
     }
     free(response);
     free(file->content);
@@ -688,14 +690,14 @@ void http_server::send_error(int error_code, struct http_connection* connection)
     
     ssize_t n = write(connection->client_socket, response.data(), response.size()+1);
     if(n == 0){
-        std::cout << "[ERROR] Write returned 0.";
+        log.log("Write returned 0!", WARNING);
     }
 }
 
 void http_server::send_redirect(std::string url, struct http_connection* connection)
 {
     std::string response = "HTTP/1.1 301 Moved Permanently\nConnection: Close\nLocation: "+url+"\n";
-    if(connection->res->set_cookies.compare("") != std::string::npos)
+    if(connection->res->set_cookies.compare("Set-Cookie: ") != std::string::npos)
     {
         response.append(connection->res->set_cookies);
         response.append(response+ "\n");
@@ -703,7 +705,7 @@ void http_server::send_redirect(std::string url, struct http_connection* connect
     response.append(response+ "\n");
     ssize_t n = write(connection->client_socket, response.data(), response.size()+1);
     if(n == 0){
-        std::cout << "[ERROR] Write returned 0.";
+        log.log("Write returned 0!", WARNING);
     }
 }
 
@@ -724,14 +726,17 @@ void http_server::send_redirect(std::string url, struct http_connection* connect
 void http_server::parse_connection_header(struct http_connection* connection)
 {
     
-    timer res("Response");
-    timer t("parse_connection_header");
+    timer res("Response", &log);
+    timer t("parse_connection_header", &log);
     
     std::string current_line;
     std::stringstream ss(connection->header);
 
     std::getline(ss, current_line, '\n');
     connection->router = current_line; /* Router with method and route */
+    current_line.erase(std::remove(current_line.begin(), current_line.end(), '\r'), current_line.end());
+    
+    log.count(current_line);
     
     std::cout << connection->router;
     
@@ -777,7 +782,7 @@ void http_server::parse_post_params(struct http_connection* connection)
 
 void http_server::parse_router(struct http_connection* connection)
 {
-    timer t("parse_router");
+    timer t("parse_router", &log);
     
     std::string header_params;
     std::stringstream ss_params(connection->router);
@@ -802,7 +807,7 @@ void http_server::parse_router(struct http_connection* connection)
 
 void http_server::parse_params(struct http_connection* connection, std::string& raw_params)
 {
-    timer t("parse_params");
+    timer t("parse_params", &log);
     std::string header_params;
     
     if(raw_params.find("&") != std::string::npos)
@@ -868,7 +873,7 @@ struct http_connection* http_server::new_http_client()
  */
 std::string http_server::handle_route(const std::string& route, const method_et& method, struct http_connection* connection)
 {
-    timer t("handle_route");
+    timer t("handle_route", &log);
     
     /* Check for favicon.ico */
     uint32_t found = route.compare("/favicon.ico");
@@ -887,16 +892,13 @@ std::string http_server::handle_route(const std::string& route, const method_et&
             response* new_res = new response;
             
             connection->res = new_res;
+            connection->context->context = this;
             
             std::string response_content;
             
             switch (routes[i]->option) {
                 case USER_DEFINED:
                      (*(routes[i]->function))(connection->context, new_res); /* Invoke given route function */
-                    break;
-                case INTERN:
-                    response_content = send_router_view(); /* Invoke given route function */
-                    new_res->response_data = response_content;
                     break;
             }
             
@@ -909,7 +911,7 @@ std::string http_server::handle_route(const std::string& route, const method_et&
                 
             }
             send_response(connection);
-            
+            log.count("Responses");
             delete new_res;
             return response_content;
         }
@@ -958,39 +960,6 @@ int http_server::route(const std::string& route_name, const method_et& method_de
     }
     route->method = method_def;
     route->option = USER_DEFINED;
-    
-    routes[http_route_counter] = route;
-    http_route_counter++;
-    
-    return http_route_counter;
-    
-}
-
-int http_server::add_route(const std::string& route_name, const method_et& method_def, std::string (http_server::*user_function)() )
-{
-    struct http_route* route = new http_route;
-    route->function_intern = user_function;
-    
-    if(route_name.find("?") != std::string::npos)
-    {
-        std::string params;
-        std::stringstream ss_params(route_name);
-        
-        std::getline(ss_params, params, '?');
-        route->route = params;
-        std::getline(ss_params, params, '?');
-        route->params = params;
-        route->has_params = 1;
-    }
-    else
-    {
-        route->params = "[ ]";
-        route->route = route_name;
-        route->has_params = 0;
-    }
-    
-    route->method = method_def;
-    route->option = INTERN;
     
     routes[http_route_counter] = route;
     http_route_counter++;

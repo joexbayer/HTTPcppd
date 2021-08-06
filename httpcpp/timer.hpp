@@ -11,13 +11,16 @@
 #include <string>
 #include <chrono>
 
+#include "logger.hpp"
+
 class timer
 {
 public:
-    timer(const char* name)
+    timer(const char* name, logger* log)
         : m_name(name), m_stopped(false)
     {
         m_start = std::chrono::high_resolution_clock::now();
+        log_p = log;
     }
 
     ~timer()
@@ -37,9 +40,9 @@ public:
 
         size_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
         
-        std::string output = "[DEBUG] (Thread: " + std::to_string(threadID) + ") -> " + m_name + " took " + std::to_string(time) + " µs.";
+        std::string output = "(Thread: " + std::to_string(threadID) + ") -> " + m_name + " took " + std::to_string(time) + " µs.\n";
         
-        std::cout << output << std::endl;
+        log_p->log(output, VERBOSE);
 
         m_stopped = true;
     }
@@ -47,6 +50,8 @@ private:
     const char* m_name;
     std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
     bool m_stopped;
+    
+    logger* log_p;
 };
 
 

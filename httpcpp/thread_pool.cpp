@@ -42,10 +42,11 @@ static void thread_loop()
     
             active_threads_mutex.lock();
             active_threads++;
-            if(server_context->config->debug)
+            // FIX
+            if(server_context->config->log_level >= VERBOSE)
             {
                 size_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
-                std::string out = "[DEBUG] (Thread:  "+std::to_string(threadID)+") -> Assigned new Job. Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +" threads.";
+                std::string out = "[VERBOSE] (Thread:  "+std::to_string(threadID)+") -> Assigned new Job. Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +" threads.";
                 std::cout << out << std::endl;
             }
             active_threads_mutex.unlock();
@@ -54,10 +55,10 @@ static void thread_loop()
         
             active_threads_mutex.lock();
             active_threads--;
-            if(server_context->config->debug)
+            if(server_context->config->log_level == VERBOSE)
             {
                 size_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
-                std::string out = "[DEBUG] (Thread: "+std::to_string(threadID)+") -> Finished Job. Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +" threads.";
+                std::string out = "[VERBOSE] (Thread: "+std::to_string(threadID)+") -> Finished Job. Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +" threads.";
                 std::cout << out << std::endl;
             }
             active_threads_mutex.unlock();
