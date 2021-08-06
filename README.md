@@ -33,7 +33,7 @@ http_server app();
 #### 3. Create routes
 
 To create routes you need to define a route, method and function. Best practice is to use a lambda.
-(Function needs to take in a request and resposne pointer.)
+(Function needs to take in a request and response pointer.)
 ```c++
  /* GET Route example with static file */
 app.route("/", GET, [](request* req, response* res){
