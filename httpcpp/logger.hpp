@@ -42,6 +42,8 @@ public:
             json.append(json_inner);
         }
         std::string json_inner = "\t\t\"Status\" : \"running\" \n";
+        json_inner.append("\t\t\"Using threads\" : \""+std::to_string(active_threads)+"\" \n");
+        json_inner.append("\t\t\"Total threads\" : \""+std::to_string(total_threads)+"\" \n");
         json.append(json_inner);
         
         json.append("\t}]\n}");
@@ -81,5 +83,6 @@ private:
 };
 
 #include "http_server.h"
+#include "thread_pool.hpp"
 
 #endif /* logger_h */

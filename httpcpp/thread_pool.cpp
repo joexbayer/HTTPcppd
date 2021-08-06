@@ -43,7 +43,7 @@ static void thread_loop()
             active_threads_mutex.lock();
             active_threads++;
             // FIX
-            if(server_context->config->log_level >= VERBOSE)
+            if(server_context->config->log_level == VERBOSE)
             {
                 size_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
                 std::string out = "[VERBOSE] (Thread:  "+std::to_string(threadID)+") -> Assigned new Job. Using "+std::to_string(active_threads) + "/" + std::to_string(total_threads) +" threads.";

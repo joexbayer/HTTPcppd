@@ -18,6 +18,9 @@
 
 #define THREAD_POOL_SIZE 100
 
+extern int active_threads;
+extern int total_threads;
+
 struct thread_job
 {
     struct http_connection* connection;

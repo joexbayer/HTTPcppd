@@ -8,14 +8,14 @@
 #include <iostream>
 #include "http_server.h"
 
-int main(int argc, const char * argv[])
+int main()
 {
     /* Scope for http server */
     {
         /* Config file for server */
         http_config config; /* http_config config(PORT, DEBUG, THREADS, FAVICON, LOG); */
         config.port = 8080;
-        config.thread_pool_size = 10;
+        config.thread_pool_size = 99;
         config.favicon = "favicon.ico";
         config.log_level = VERBOSE;
         
@@ -69,9 +69,6 @@ int main(int argc, const char * argv[])
         app.run();
     }
     std::cin.get();
-    
-    
-    //curl -i -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Cookie: token=secret-token' -d '{"name": "New item", "year": "2009"}' 127.0.0.1:8080/json
     
     return 0;
 }
