@@ -9,7 +9,8 @@
 
 static bool run = true;
 
-void on_exit(){
+void on_exit()
+{
     run = false;
 }
 
@@ -61,7 +62,8 @@ std::string http_server::send_router_view()
         
         response.append("<tr><form method=\""+method_names[routes[i]->method]+"\" action=\""+routes[i]->route+"\"><td>   \
                         "+method_names[routes[i]->method]+"</td><td>"+routes[i]->route+" </td><td>");
-        if(routes[i]->has_params){
+        if(routes[i]->has_params)
+        {
             while(getline(ss, param, ','))
             {
                 response.append("<input style='width:50%;' class='input-group col-xs-2' placeholder='"+param+"' type='text' name='"+param+"'>");
@@ -199,7 +201,8 @@ void http_server::setup()
     std::cout << "HTTP server has been started.\n";
 }
 
-http_server::~http_server(){
+http_server::~http_server()
+{
     cleanup();
 }
 
@@ -208,7 +211,8 @@ std::string http_server::stats()
     return log.to_json(config);
 }
 
-void http_server::run(){
+void http_server::run()
+{
     
     // TODO: SETUP
     
@@ -228,7 +232,8 @@ void http_server::run(){
  *  struct file_s: file struct with file info
  *
  */
-struct file_s* http_server::open_file(std::string& file){
+struct file_s* http_server::open_file(std::string& file)
+{
     
     FILE *fp = fopen (file.c_str(), "rb");
     if ( NULL == fp ) {
@@ -239,7 +244,8 @@ struct file_s* http_server::open_file(std::string& file){
 
     struct stat finfo; /* Get file info */
     int fs = fstat(fd, &finfo);
-    if(fs == -1){
+    if(fs == -1)
+    {
         perror("fstat");
         exit(EXIT_FAILURE);
     }
@@ -249,7 +255,8 @@ struct file_s* http_server::open_file(std::string& file){
     char* content = (char*) malloc(content_size);
 
     size_t readf = fread(content, content_size, 1, fp); /* read file into buffer */
-    if(readf != 1){
+    if(readf != 1)
+    {
         exit(EXIT_FAILURE);
     }
     
@@ -422,7 +429,8 @@ void http_server::handle_thread_connection(struct http_connection *connection)
         ssize_t valread = recv(connection->client_socket, buffer, HTTP_BUFFER_SIZE, 0);
         buffer[HTTP_BUFFER_SIZE-1] = 0;
 
-        if(valread <= 0){
+        if(valread <= 0)
+        {
             break;
         }
     
@@ -500,7 +508,7 @@ bool http_server::authenticate(struct http_connection* connection)
             
             cookie = cookie.substr(0, cookie.size()-1); //remove \r
             
-            if(cookie.compare(token) == 0)
+            if(cookie.compare(token) != std::string::npos)
             {
                 return true;
             }
@@ -582,7 +590,8 @@ void http_server::parse_method_route(struct http_connection* connection)
  *  std::string: file content
  *
  */
-std::string http_server::static_html(std::string filname){
+std::string http_server::static_html(std::string filname)
+{
     
     struct file_s* file = open_file(filname);
     
@@ -607,7 +616,8 @@ std::string http_server::static_html(std::string filname){
  *  void:
  *
  */
-void http_server::send_response(struct http_connection* connection){
+void http_server::send_response(struct http_connection* connection)
+{
     
     timer t("send_response", &log);
     
@@ -632,7 +642,8 @@ void http_server::send_response(struct http_connection* connection){
     output.append(connection->res->response_data);
     
     ssize_t n = write(connection->client_socket, output.data(), output.size());
-    if(n == 0){
+    if(n == 0)
+    {
         log.log("Write returned 0!", WARNING);
     }
 }
@@ -663,7 +674,8 @@ void http_server::send_favicon(struct http_connection* connection)
     memcpy(response+header.size(), file->content, file->size);
     
     ssize_t n = write(connection->client_socket, response, header.size()+file->size);
-    if(n == 0){
+    if(n == 0)
+    {
         log.log("Write returned 0!", WARNING);
     }
     free(response);
@@ -688,8 +700,9 @@ void http_server::send_error(int error_code, struct http_connection* connection)
             break;
     }
     
-    ssize_t n = write(connection->client_socket, response.data(), response.size()+1);
-    if(n == 0){
+    ssize_t n = write(connection->client_socket, response.data(), response.size()+2);
+    if(n == 0)
+    {
         log.log("Write returned 0!", WARNING);
     }
 }
@@ -704,7 +717,8 @@ void http_server::send_redirect(std::string url, struct http_connection* connect
     }
     response.append(response+ "\n");
     ssize_t n = write(connection->client_socket, response.data(), response.size()+1);
-    if(n == 0){
+    if(n == 0)
+    {
         log.log("Write returned 0!", WARNING);
     }
 }
@@ -978,18 +992,22 @@ int http_server::route(const std::string& route_name, const method_et& method_de
  *  returns: method_et enum
  *
  */
-method_et http_server::get_method(const char* method_string){
+method_et http_server::get_method(const char* method_string)
+{
 
 
-    if(strcmp(method_string, "GET") == 0){
+    if(strcmp(method_string, "GET") == 0)
+    {
         return GET;
     }
 
-    if(strcmp(method_string, "POST") == 0){
+    if(strcmp(method_string, "POST") == 0)
+    {
         return POST;
     }
 
-    if(strcmp(method_string, "HEAD") == 0){
+    if(strcmp(method_string, "HEAD") == 0)
+    {
         return HEAD;
     }
 

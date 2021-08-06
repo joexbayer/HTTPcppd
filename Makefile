@@ -2,10 +2,10 @@ CFLAGS = -std=c++11 -g -Wall -Wextra -lm
 
 C_FILES = $(find httpcpp/*.cpp)
 
-all: compile run
+all: http_server run
 
-compile: $(C_FILES)
-	g++ httpcpp/*.cpp $(CFLAGS) -o server
+http_server: $(C_FILES)
+	g++ httpcpp/*.cpp $(CFLAGS) -o build/server
 
 run: compile
-	rm -r ./server.dSYM && sudo ./server
+	rm -r .build/server.dSYM && sudo .build/server
