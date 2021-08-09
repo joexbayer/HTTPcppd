@@ -71,7 +71,7 @@ res->redirect("/"); /* Redirect to given route */
 
 res->send(http_server::static_html("index.html")); /* Sends given HTML file as response */
 ```
-Example of req->context->stats(), data collected during runtime.
+Example of ```req->context->stats()```, data collected during runtime.
 ```javascript
 {
  "Stats": {
