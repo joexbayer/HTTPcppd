@@ -40,8 +40,8 @@ int main()
         app.route("/json?[age]", GET, [](request* req, response* res){
             
             res->set_contentype("application/json");
-            /* Use params and return value in json. */
-            res->send("{name: \"joe\", age: \"" + req->params["age"] + "\"}");
+            /* Use params and headers and return value in json. */
+            res->send("{\"Host\": \""+req->headers["Host"]+"\",\"IP\": \""+req->client_ip+"\", \"age\": \"" + req->params["age"] + "\"}");
             
         });
         

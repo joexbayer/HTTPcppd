@@ -197,15 +197,17 @@ typedef struct http_context
     /* User (Identity) TODO */
     
     std::string cookies;
-    std::string host;
     std::string connection;
     
     http_server* context;
     
     std::map <std::string, std::string> params;
+    std::map <std::string, std::string> headers;
     
     bool authorized;
     bool keep_alive;
+    
+    std::string client_ip;
     
     method_et method;
     std::string route;

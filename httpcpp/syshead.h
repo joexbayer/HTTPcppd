@@ -22,6 +22,7 @@
 #include <sys/select.h>
 #include <unistd.h>
 #include <map>
+#include <arpa/inet.h>
 
 #define RESET   "\033[0m"
 #define BLACK   "\033[30m"      /* Black */

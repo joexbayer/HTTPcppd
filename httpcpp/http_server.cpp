@@ -366,7 +366,12 @@ void http_server::read_handle_loop()
         new_connection->client_socket = client_socket;
         new_connection->client_addr = std::move(address);
         
+        char str[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(address->sin_addr), str, INET_ADDRSTRLEN);
+        new_connection->context->client_ip = std::string(str);
+        
         assign_worker(new_connection);
+        
         requests--;
     }
 }
@@ -613,7 +618,6 @@ void http_server::pipeline_handler(struct http_connection* connection)
             parse_router(connection);
             parse_method_route(connection);
             handle_route(connection->context->route, connection->context->method, connection);
-            send_response(connection);
             
             break;
         default:
@@ -775,7 +779,7 @@ void http_server::parse_connection_header(struct http_connection* connection)
     
     log.count(current_line);
     
-    std::cout << connection->router;
+    std::cout << connection->context->client_ip << " -> "<< connection->router;
     
     while(std::getline(ss, current_line, '\n'))
     {
@@ -788,10 +792,6 @@ void http_server::parse_connection_header(struct http_connection* connection)
                 connection->context->keep_alive = true;
             }
         }
-        else if(current_line.find("Host: ") != std::string::npos)
-        {
-            connection->context->host = current_line;
-        }
         else if(current_line.find("Cookie: ") != std::string::npos)
         {
             connection->context->cookies = current_line;
@@ -803,6 +803,16 @@ void http_server::parse_connection_header(struct http_connection* connection)
                 parse_post_params(connection);
             }
         }
+        
+        std::string header_edit;
+        std::stringstream ss_header(current_line);
+
+        std::getline(ss_header, header_edit, ' ');
+        std::string header_name = header_edit.substr(0, header_edit.size()-1);
+        std::getline(ss_header, header_edit, ' ');
+        connection->context->headers[header_name] = header_edit.substr(0, header_edit.size()-1);
+        
+        
     }
 }
 
@@ -949,6 +959,7 @@ std::string http_server::handle_route(const std::string& route, const method_et&
                 
             }
             log.count("Responses");
+            send_response(connection);
             return response_content;
         }
     }
