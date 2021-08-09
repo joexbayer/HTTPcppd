@@ -71,6 +71,29 @@ res->redirect("/"); /* Redirect to given route */
 
 res->send(http_server::static_html("index.html")); /* Sends given HTML file as response */
 ```
+Example of ```req->context->stats()```, data collected during runtime.
+```javascript
+{
+ "Stats": {
+  "127.0.0.1": {
+    "GET / HTTP/1.1": "2",
+    "GET /favicon.ico HTTP/1.1": "3",
+    "GET /json?age= HTTP/1.1": "3",
+    "GET /json?age=21 HTTP/1.1": "1",
+    "GET /routes HTTP/1.1": "1",
+    "GET /routes? HTTP/1.1": "2",
+    "GET /stats? HTTP/1.1": "3",
+    "POST /example HTTP/1.1": "1",
+    "Type": "Client"
+  },
+  "Authorized requests": "16",
+  "Responses": "11",
+  "Status" : "running", 
+  "Using threads" : "2", 
+  "Total threads" : "99" 
+ }
+}
+```
 
 #### 4. Add an authentication token (OPTIONAL) and run the server
 ```c++
