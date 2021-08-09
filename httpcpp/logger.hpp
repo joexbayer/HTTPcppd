@@ -38,11 +38,11 @@ public:
     
     std::string to_json(struct http_config* config)
     {
-        std::string json = "{\n\t\"Stats\": [{\n";
+        std::string json = "{\n\t\"Stats\": {\n";
         
         for(std::map <std::string, std::map <std::string, int>>::iterator it_group = stats_grouped.begin(); it_group != stats_grouped.end(); ++it_group) {
             
-            std::string json_group_title = "\t\t\""+ it_group->first +"\": [{\n";
+            std::string json_group_title = "\t\t\""+ it_group->first +"\": {\n";
             
             for(std::map<std::string,int>::iterator it = it_group->second.begin(); it != it_group->second.end(); ++it) {
                 
@@ -52,7 +52,7 @@ public:
             std::string json_inner = "\t\t\t\t\"Type\": \"Client\"\n";
             json_group_title.append(json_inner);
             
-            std::string json_group_title_end = "\t\t}],\n";
+            std::string json_group_title_end = "\t\t},\n";
             json_group_title.append(json_group_title_end);
             json.append(json_group_title);
         }
@@ -67,7 +67,7 @@ public:
         json_inner.append("\t\t\"Total threads\" : \""+std::to_string(total_threads)+"\" \n");
         json.append(json_inner);
         
-        json.append("\t}]\n}");
+        json.append("\t}\n}");
         
         return json;
     }
