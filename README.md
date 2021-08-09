@@ -43,14 +43,16 @@ app.route("/", GET, [](request* req, response* res){
 });
 ```
 
-To define parameters put a ? after the route and then define parameters between two brackets:
+To define parameters put a ? after the route and then define parameters between two brackets.
+You can access parameters by using the request->params map.
+To access headers use the request->headers map.
 ```c++
 /* GET Route example json response and params */
 app.route("/json?[age]", GET, [](request* req, response* res){
 
     res->set_contentype("application/json");
     /* Use params and return value in json. */
-    res->send("{name: \"Joe\", age: \"" + req->params["age"] + "\"}");
+    res->send("{name: \""+req->headers["Host"]+"\", age: \"" + req->params["age"] + "\"}");
 
 });
 ```
