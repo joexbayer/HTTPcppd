@@ -208,6 +208,7 @@ http_server::~http_server()
 
 std::string http_server::stats()
 {
+    timer t("stats to json", &log);
     return log.to_json(config);
 }
 
@@ -777,9 +778,8 @@ void http_server::parse_connection_header(struct http_connection* connection)
     connection->router = current_line; /* Router with method and route */
     current_line.erase(std::remove(current_line.begin(), current_line.end(), '\r'), current_line.end());
     
-    log.count(current_line);
-    
     std::cout << connection->context->client_ip << " -> "<< connection->router;
+    log.count(connection->context->client_ip, current_line);
     
     while(std::getline(ss, current_line, '\n'))
     {
