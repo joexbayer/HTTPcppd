@@ -18,10 +18,17 @@
 #define HTTP_BUFFER_SIZE 8192 // 8KB
 
 // ********** HTTP pipeline stages **********
-#define HTTP_ACCEPTED_CLIENT 0x01
-#define HTTP_ACCEPTED_REQUEST 0x02
-#define HTTP_ASSIGNED_WORKER 0x03
-
+enum http_pipeline_stages {
+    
+    HTTP_ACCEPTED_CLIENT,
+    HTTP_ACCEPTED_REQUEST,
+    HTTP_PARSE_HEADER,
+    HTTP_PARSE_ROUTER,
+    HTTP_PARSE_METHOD,
+    HTTP_HANDLE_ROUTE,
+    HTTP_SEND_RESPONSE
+    
+};
 
 // ********** HTTP error codes **********
 #define BAD_REQUEST 400
@@ -84,10 +91,10 @@ struct http_connection
     std::string router;
     std::string params_string;
     
-    // user response
     response* res;
     
-    // socket
+    enum http_pipeline_stages stage;
+    
     int client_socket;
     struct sockaddr_in* client_addr;
     
@@ -144,6 +151,8 @@ private:
     void setup();
     
     //pipeline
+    void pipeline_handler(struct http_connection* connection);
+    
     void parse_connection_header(struct http_connection* connection);
     void parse_method_route(struct http_connection* connection);
     void parse_router(struct http_connection* connection);

@@ -92,7 +92,7 @@ std::string http_server::send_router_view()
 void response::set_contentype(const std::string& type)
 {
     std::string new_content_type = "Content-Type: "+type;
-    content_type = new_content_type;
+    content_type = std::move(new_content_type); /* Move instead of assignment copy */
 }
 
 /*
@@ -117,7 +117,7 @@ void response::add_cookie(std::string& cookie_name, std::string& cookie_value)
 void response::redirect(std::string url)
 {
     redirect_ = 1;
-    redirect_url = url;
+    redirect_url = std::move(url);
 }
 
 void response::send(std::string content)
@@ -364,7 +364,7 @@ void http_server::read_handle_loop()
         
         struct http_connection* new_connection = new_http_client();
         new_connection->client_socket = client_socket;
-        new_connection->client_addr = address;
+        new_connection->client_addr = std::move(address);
         
         assign_worker(new_connection);
         requests--;
@@ -389,6 +389,7 @@ void http_server::assign_worker(struct http_connection *connection)
     
     job->connection = connection;
     job->context = this;
+    job->connection->stage = HTTP_ACCEPTED_CLIENT;
     
     worker_pool.add_job(job);
     std::cout << std::endl;
@@ -436,7 +437,9 @@ void http_server::handle_thread_connection(struct http_connection *connection)
     
         timer t("handle_thread_connection", &log);
     
+        //TODO: BETTER
         connection->content = std::string(buffer);
+        connection->stage = HTTP_ACCEPTED_REQUEST;
         
         // get content vs header
         connection->header = connection->content;
@@ -444,11 +447,11 @@ void http_server::handle_thread_connection(struct http_connection *connection)
         std::string content = connection->content.substr(connection->content.find(delimiter), connection->content.length());
         delimiter.clear();
                                                          
-        connection->content = content;
+        connection->content = std::move(content); /* Move because content is no longer needed */
         content.clear();
         
         t.~timer();
-        parse_connection_header(connection); /* Begin of parse pipeline */
+        pipeline_handler(connection); /* Begin of parse pipeline */
     
         // end of pipeline
         if(connection->context->keep_alive)
@@ -538,6 +541,8 @@ void http_server::parse_method_route(struct http_connection* connection)
 {
     timer t("parse_method_route", &log);
     
+    connection->stage = HTTP_PARSE_METHOD;
+    
     std::string route_header = connection->router;
     
     std::string current_word;
@@ -568,12 +573,6 @@ void http_server::parse_method_route(struct http_connection* connection)
         log.count("Authorized requests");
         connection->context->authorized = authenticated;
     }
-    else
-    {
-        t.~timer();
-    }
-    
-    std::string response_content = handle_route(connection->context->route, connection->context->method, connection);
     // TODO: print response_content
 
 }
@@ -603,6 +602,25 @@ std::string http_server::static_html(std::string filname)
     return return_string;
 }
 
+/* UNDER CONSTRUCTION */
+void http_server::pipeline_handler(struct http_connection* connection)
+{
+    timer res("Response", &log);
+    switch (connection->stage) {
+        case HTTP_ACCEPTED_REQUEST:
+            // pipeline
+            parse_connection_header(connection);
+            parse_router(connection);
+            parse_method_route(connection);
+            handle_route(connection->context->route, connection->context->method, connection);
+            send_response(connection);
+            
+            break;
+        default:
+            break;
+    }
+}
+
 /*
  * Function:  send_response
  * --------------------
@@ -620,6 +638,8 @@ void http_server::send_response(struct http_connection* connection)
 {
     
     timer t("send_response", &log);
+    
+    connection->stage = HTTP_SEND_RESPONSE;
     
     std::string header = "HTTP/1.1 "+ std::to_string(connection->res->status) +"\nContent-length: "+ std::to_string(connection->res->response_data.size()) + "\n";
     
@@ -646,6 +666,8 @@ void http_server::send_response(struct http_connection* connection)
     {
         log.log("Write returned 0!", WARNING);
     }
+    
+    delete connection->res;
 }
 
 /*
@@ -740,8 +762,9 @@ void http_server::send_redirect(std::string url, struct http_connection* connect
 void http_server::parse_connection_header(struct http_connection* connection)
 {
     
-    timer res("Response", &log);
     timer t("parse_connection_header", &log);
+    
+    connection->stage = HTTP_PARSE_HEADER;
     
     std::string current_line;
     std::stringstream ss(connection->header);
@@ -781,9 +804,6 @@ void http_server::parse_connection_header(struct http_connection* connection)
             }
         }
     }
-    t.~timer();
-    parse_router(connection);
-    parse_method_route(connection);
 }
 
 void http_server::parse_post_params(struct http_connection* connection)
@@ -797,6 +817,8 @@ void http_server::parse_post_params(struct http_connection* connection)
 void http_server::parse_router(struct http_connection* connection)
 {
     timer t("parse_router", &log);
+    
+    connection->stage = HTTP_PARSE_ROUTER;
     
     std::string header_params;
     std::stringstream ss_params(connection->router);
@@ -889,6 +911,8 @@ std::string http_server::handle_route(const std::string& route, const method_et&
 {
     timer t("handle_route", &log);
     
+    connection->stage = HTTP_PARSE_METHOD;
+    
     /* Check for favicon.ico */
     uint32_t found = route.compare("/favicon.ico");
     if(found == 0 && method == GET)
@@ -924,9 +948,7 @@ std::string http_server::handle_route(const std::string& route, const method_et&
                 return response_content;
                 
             }
-            send_response(connection);
             log.count("Responses");
-            delete new_res;
             return response_content;
         }
     }
