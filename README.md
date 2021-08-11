@@ -16,6 +16,7 @@ Running 30s test @ http://127.0.0.1:8080/
 Requests/sec:  29818.32
 Transfer/sec:      5.89MB
 ```
+(Run on MacBook Pro, 2.3 GHz, 8-core Intel i9, 32gb 2667 DDR4)
 
 #### How to use: 
 
