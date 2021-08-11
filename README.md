@@ -2,6 +2,24 @@
 
 ### HTTP RESTful API with routes and serving static files.
 
+[WRK](https://github.com/wg/wrk) performance test on terminal - localhost with 20 threads:
+```
+wrk -t12 -c400 -d30s http://127.0.0.1:8080/
+----------------------------------------------
+Running 30s test @ http://127.0.0.1:8080/
+  12 threads and 400 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   155.47us   28.02us   6.78ms   98.35%
+    Req/Sec    13.95k     5.80k   26.98k    60.31%
+  3761951 requests in 30.10s, 731.89MB read
+  Socket errors: connect 155, read 1437, write 0, timeout 0
+Requests/sec: 124972.81
+Transfer/sec:     24.31MB
+```
+(Run on MacBook Pro, 2.3 GHz, 8-core Intel i9, 32gb 2667 DDR4)
+
+[More Benchmarks](Benchmarks.md)
+
 #### How to use: 
 
 #### 1.(Optional) Create a config for your http server
