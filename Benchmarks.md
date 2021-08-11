@@ -8,7 +8,7 @@ wrk -t12 -c400 -d30s http://127.0.0.1:5000/
 ```
 
 ### HTTPcppd - Hello, World!, 200threads
-Result
+Result - Run from xcode
 ```
 Running 30s test @ http://127.0.0.1:8080/
   12 threads and 400 connections
@@ -23,7 +23,7 @@ Transfer/sec:      6.06MB
 
 
 ### HTTPcppd - Hello, World!, 99threads - with terminal output
-Result 1
+Result 1 - Run from xcode
 ```
 Running 30s test @ http://127.0.0.1:8080/
   12 threads and 400 connections
@@ -36,7 +36,7 @@ Requests/sec:  29818.32
 Transfer/sec:      5.89MB
 ```
 ### HTTPcppd - Hello, World!, 99threads - without terminal output
-Result 1
+Result 1 - Run from xcode
 ```
 Running 30s test @ http://127.0.0.1:8080/
   12 threads and 400 connections
@@ -50,7 +50,7 @@ Transfer/sec:      7.38MB
 ```
 
 ### HTTPcppd - Hello, World!, 20threads - without terminal output
-Result 1
+Result 1 - Run from xcode
 ```
 Running 30s test @ http://127.0.0.1:8080/
   12 threads and 400 connections
@@ -62,19 +62,19 @@ Running 30s test @ http://127.0.0.1:8080/
 Requests/sec:  80813.07
 Transfer/sec:     15.95MB
 ```
-Result 2
+Result 2 - Run from xcode, without opening file.
 ```
 Running 30s test @ http://127.0.0.1:8080/
   12 threads and 400 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   256.77us    1.16ms 133.86ms   99.69%
-    Req/Sec     8.96k     4.93k   19.11k    69.27%
-  2407732 requests in 30.04s, 475.31MB read
-  Socket errors: connect 0, read 20632, write 0, timeout 0
-Requests/sec:  80143.80
-Transfer/sec:     15.82MB
+    Latency   155.47us   28.02us   6.78ms   98.35%
+    Req/Sec    13.95k     5.80k   26.98k    60.31%
+  3761951 requests in 30.10s, 731.89MB read
+  Socket errors: connect 155, read 1437, write 0, timeout 0
+Requests/sec: 124972.81
+Transfer/sec:     24.31MB
 ```
-Result 3 - Run from terminal
+Result 3 - Run from terminal, without opening file.
 ```
 Running 30s test @ http://127.0.0.1:8080/
   12 threads and 400 connections
