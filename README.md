@@ -18,6 +18,8 @@ Transfer/sec:     15.95MB
 ```
 (Run on MacBook Pro, 2.3 GHz, 8-core Intel i9, 32gb 2667 DDR4)
 
+[More Benchmarks](Benchmarks.md)
+
 #### How to use: 
 
 #### 1.(Optional) Create a config for your http server
