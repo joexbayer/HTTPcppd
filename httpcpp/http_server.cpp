@@ -8,6 +8,9 @@
 #include "http_server.h"
 
 static bool run = true;
+struct http_cache* start_cache = nullptr;
+
+static std::mutex cache_mutex;
 
 void on_exit()
 {
@@ -23,6 +26,7 @@ struct file_s* http_cache::find(const std::string &filename, struct http_cache *
     }
     if(cache->filename.compare(filename) != std::string::npos)
     {
+        std::cout << "Found Cache for: " << filename << std::endl;
         return cache->file;
     }
     return http_cache::find(filename, cache->next);
@@ -32,11 +36,14 @@ void http_cache::add(struct file_s *u_file, const std::string &filename)
 {
     if(start_cache == nullptr)
     {
+        cache_mutex.lock();
         struct http_cache* new_cache = new http_cache;
         new_cache->file = u_file;
         new_cache->filename = filename;
         new_cache->next = nullptr;
         start_cache = new_cache;
+        std::cout << "New Cache for: " << filename << std::endl;
+        cache_mutex.unlock();
         return;
     }
     add_recursive(u_file, filename, start_cache);
@@ -46,14 +53,31 @@ void http_cache::add_recursive(struct file_s* u_file, const std::string& filenam
 {
     if(next == nullptr)
     {
+        cache_mutex.lock();
         struct http_cache* new_cache = new http_cache;
         new_cache->file = u_file;
         new_cache->filename = filename;
         new_cache->next = nullptr;
         next = new_cache;
+        
+        std::cout << "New Cache for: " << filename << std::endl;
+        cache_mutex.unlock();
         return;
     }
     add_recursive(u_file, filename, next->next);
+}
+
+void http_cache::free_cache(struct http_cache* start)
+{
+    cache_mutex.lock();
+    if(start == nullptr)
+        return;
+    free(start->file->content);
+    delete start->file;
+    cache_mutex.unlock();
+    free_cache(start->next);
+    delete start;
+    start = nullptr;
 }
 
 
@@ -372,6 +396,7 @@ void http_server::cleanup()
     {
         delete routes[i];
     }
+    http_cache::free_cache(start_cache);
 }
 
 
@@ -640,9 +665,6 @@ std::string http_server::static_html(std::string filname)
     if(file != nullptr)
     {
         std::string return_string(file->content);
-        
-        //free(file->content);
-        //delete file;
 
         return return_string;
     }

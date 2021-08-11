@@ -93,9 +93,10 @@ struct http_cache
     static struct file_s* find(const std::string& filename, struct http_cache* cach);
     static void add(struct file_s* u_file, const std::string& filename);
     static void add_recursive(struct file_s* u_file, const std::string& filename, struct http_cache* next);
+    static void free_cache(struct http_cache* start);
 };
 
-static struct http_cache* start_cache = nullptr;
+extern struct http_cache* start_cache;
 
 struct http_connection
 {
