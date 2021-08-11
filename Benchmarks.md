@@ -74,6 +74,18 @@ Running 30s test @ http://127.0.0.1:8080/
 Requests/sec:  80143.80
 Transfer/sec:     15.82MB
 ```
+Result 3 - Run from terminal
+```
+Running 30s test @ http://127.0.0.1:8080/
+  12 threads and 400 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   170.15us   34.77us   6.66ms   92.44%
+    Req/Sec    11.30k     5.58k   25.46k    62.25%
+  3385619 requests in 30.10s, 658.67MB read
+  Socket errors: connect 155, read 1343, write 0, timeout 0
+Requests/sec: 112475.80
+Transfer/sec:     21.88MB
+```
 
 ### ASP.NET - Web application, index.html - Hello, World!
 Result
