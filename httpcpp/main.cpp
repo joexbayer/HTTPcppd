@@ -25,8 +25,8 @@ int main()
         /* GET Route example with static file */
         app.route("/", GET, [](request* req, response* res){
             
-            //res->send(http_server::static_html("index.html"));
-            res->send("<p>Hello world!</p>");
+            res->send(http_server::static_html("index.html"));
+            //res->send("<p>Hello world!</p>");
             
         });
         

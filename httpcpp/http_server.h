@@ -83,6 +83,20 @@ typedef struct response /* http request given to user defined function */
 // CONNECTION SECTION
 typedef struct http_context request;
 
+struct http_cache
+{
+    struct file_s* file;
+    std::string filename;
+    
+    struct http_cache* next;
+    
+    static struct file_s* find(const std::string& filename, struct http_cache* cach);
+    static void add(struct file_s* u_file, const std::string& filename);
+    static void add_recursive(struct file_s* u_file, const std::string& filename, struct http_cache* next);
+};
+
+static struct http_cache* start_cache = nullptr;
+
 struct http_connection
 {
     struct http_context* context;

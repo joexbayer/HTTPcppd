@@ -15,6 +15,47 @@ void on_exit()
 }
 
 
+struct file_s* http_cache::find(const std::string &filename, struct http_cache *cache)
+{
+    if(cache == nullptr)
+    {
+        return nullptr;
+    }
+    if(cache->filename.compare(filename) != std::string::npos)
+    {
+        return cache->file;
+    }
+    return http_cache::find(filename, cache->next);
+}
+
+void http_cache::add(struct file_s *u_file, const std::string &filename)
+{
+    if(start_cache == nullptr)
+    {
+        struct http_cache* new_cache = new http_cache;
+        new_cache->file = u_file;
+        new_cache->filename = filename;
+        new_cache->next = nullptr;
+        start_cache = new_cache;
+        return;
+    }
+    add_recursive(u_file, filename, start_cache);
+    
+}
+void http_cache::add_recursive(struct file_s* u_file, const std::string& filename, struct http_cache* next)
+{
+    if(next == nullptr)
+    {
+        struct http_cache* new_cache = new http_cache;
+        new_cache->file = u_file;
+        new_cache->filename = filename;
+        new_cache->next = nullptr;
+        next = new_cache;
+        return;
+    }
+    add_recursive(u_file, filename, next->next);
+}
+
 
 /*
  * Function:  send_router_view
@@ -216,7 +257,6 @@ void http_server::run()
 {
     
     // TODO: SETUP
-    
     read_handle_loop(); /* Main accept - read event loop */
 }
 
@@ -596,12 +636,25 @@ void http_server::parse_method_route(struct http_connection* connection)
  */
 std::string http_server::static_html(std::string filname)
 {
-    struct file_s* file = open_file(filname);
+    struct file_s* file = http_cache::find(filname, start_cache);
+    if(file != nullptr)
+    {
+        std::string return_string(file->content);
+        
+        //free(file->content);
+        //delete file;
+
+        return return_string;
+    }
     
-    std::string return_string(file->content);
-    free(file->content);
+    struct file_s* file_new = open_file(filname);
     
-    delete file;
+    http_cache::add(file_new, filname);
+    
+    std::string return_string(file_new->content);
+    
+    //free(file->content);
+    //delete file;
 
     return return_string;
 }
