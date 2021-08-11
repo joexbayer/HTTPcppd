@@ -2,7 +2,7 @@
 
 ### HTTP RESTful API with routes and serving static files.
 
-[WRK](https://github.com/wg/wrk) performance test on terminal - localhost with 20 threads:
+[WRK](https://github.com/wg/wrk) performance test on xcode - localhost with 20 threads:
 ```
 wrk -t12 -c400 -d30s http://127.0.0.1:8080/
 ----------------------------------------------
