@@ -2,19 +2,19 @@
 
 ### HTTP RESTful API with routes and serving static files.
 
-[WRK](https://github.com/wg/wrk) performance test on localhost with 20 threads:
+[WRK](https://github.com/wg/wrk) performance test on terminal - localhost with 20 threads:
 ```
 wrk -t12 -c400 -d30s http://127.0.0.1:8080/
 ----------------------------------------------
 Running 30s test @ http://127.0.0.1:8080/
   12 threads and 400 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   238.31us  382.54us  62.52ms   99.79%
-    Req/Sec    11.85k     6.18k   26.40k    54.03%
-  2427715 requests in 30.04s, 479.26MB read
-  Socket errors: connect 0, read 8142, write 0, timeout 2
-Requests/sec:  80813.07
-Transfer/sec:     15.95MB
+    Latency   170.15us   34.77us   6.66ms   92.44%
+    Req/Sec    11.30k     5.58k   25.46k    62.25%
+  3385619 requests in 30.10s, 658.67MB read
+  Socket errors: connect 155, read 1343, write 0, timeout 0
+Requests/sec: 112475.80
+Transfer/sec:     21.88MB
 ```
 (Run on MacBook Pro, 2.3 GHz, 8-core Intel i9, 32gb 2667 DDR4)
 
