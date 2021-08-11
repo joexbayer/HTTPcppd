@@ -7,16 +7,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "CB49402A-390A-44CD-97C6-A31C3B39A57B"
+            uuid = "46D393A5-B6F9-4451-8128-8A763C6698CF"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "httpcpp/http_server.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "20"
-            endingLineNumber = "20"
-            landmarkName = "http_cache::find(filename, cache)"
+            startingLineNumber = "744"
+            endingLineNumber = "744"
+            landmarkName = "http_server::send_favicon(connection)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

@@ -743,7 +743,12 @@ void http_server::send_favicon(struct http_connection* connection)
 {
     timer t("send_favicon", &log);
     
-    struct file_s* file = open_file(config->favicon);
+    struct file_s* file = http_cache::find(config->favicon, start_cache);
+    if(file == nullptr)
+    {
+        file = open_file(config->favicon);
+        http_cache::add(file, config->favicon);
+    }
     
     std::string header = "HTTP/1.1 200\nContent-length: "+ std::to_string(file->size) + "\n";
     header.append("Content-Type: image/gif\n\n");
@@ -757,9 +762,6 @@ void http_server::send_favicon(struct http_connection* connection)
     {
         log.log("Write returned 0!", WARNING);
     }
-    free(response);
-    free(file->content);
-    delete file;
     
 }
 
