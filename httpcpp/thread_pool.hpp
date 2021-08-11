@@ -16,10 +16,11 @@
 #include <chrono>
 #include <unistd.h>
 
-#define THREAD_POOL_SIZE 100
+#define THREAD_POOL_SIZE 500
 
 extern int active_threads;
 extern int total_threads;
+extern int most_threads;
 
 struct thread_job
 {

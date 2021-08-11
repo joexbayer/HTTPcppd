@@ -12,6 +12,7 @@ static std::mutex queue_mutex;
 
 static std::mutex active_threads_mutex;
 
+int most_threads = 0;
 int active_threads = 0;
 int total_threads = 0;
 
@@ -42,6 +43,12 @@ static void thread_loop()
     
             active_threads_mutex.lock();
             active_threads++;
+            
+            if(active_threads > most_threads)
+            {
+                most_threads++;
+            }
+            
             // FIX
             if(server_context->config->log_level == VERBOSE)
             {

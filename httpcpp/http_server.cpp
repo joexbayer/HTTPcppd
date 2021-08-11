@@ -351,7 +351,7 @@ void http_server::cleanup()
 void http_server::read_handle_loop()
 {
     int requests = 10;
-    while(requests > 0)
+    while(true)
     {
         int client_socket;
         int addrlen = sizeof(struct sockaddr_in);
@@ -398,7 +398,6 @@ void http_server::assign_worker(struct http_connection *connection)
     job->connection->stage = HTTP_ACCEPTED_CLIENT;
     
     worker_pool.add_job(job);
-    std::cout << std::endl;
 }
 
 
@@ -469,8 +468,8 @@ void http_server::handle_thread_connection(struct http_connection *connection)
 void http_server::close_connection(struct http_connection* connection)
 {
     close(connection->client_socket);
-    delete connection->client_addr;
-    delete connection->context; /* New context on keep alive? */
+    //delete connection->client_addr;
+    //delete connection->context; /* New context on keep alive? */
     delete connection;
 }
 
@@ -565,7 +564,7 @@ void http_server::parse_method_route(struct http_connection* connection)
     connection->context->route = current_word;
     std::getline(ss, current_word, ' '); // HTTP VERSION
     
-    if(use_authentication)
+    if(use_authentication == 1)
     {
         t.~timer();
         bool authenticated = authenticate(connection);
@@ -597,7 +596,6 @@ void http_server::parse_method_route(struct http_connection* connection)
  */
 std::string http_server::static_html(std::string filname)
 {
-    
     struct file_s* file = open_file(filname);
     
     std::string return_string(file->content);
@@ -672,7 +670,8 @@ void http_server::send_response(struct http_connection* connection)
         log.log("Write returned 0!", WARNING);
     }
     
-    delete connection->res;
+    /* Causes errors, maybe on incomplete requests? */
+    //delete connection->res;
 }
 
 /*
@@ -778,12 +777,13 @@ void http_server::parse_connection_header(struct http_connection* connection)
     connection->router = current_line; /* Router with method and route */
     current_line.erase(std::remove(current_line.begin(), current_line.end(), '\r'), current_line.end());
     
-    std::cout << connection->context->client_ip << " -> "<< connection->router;
+    //std::cout << connection->context->client_ip << " -> "<< connection->router;
     log.count(connection->context->client_ip, current_line);
     
+    t.~timer();
+    timer t_h("parsing headers.", &log);
     while(std::getline(ss, current_line, '\n'))
     {
-        // TODO: BETTER
         if(current_line.find("Connection: ") != std::string::npos)
         {
             connection->context->connection = current_line;
@@ -803,7 +803,6 @@ void http_server::parse_connection_header(struct http_connection* connection)
                 parse_post_params(connection);
             }
         }
-        
         std::string header_edit;
         std::stringstream ss_header(current_line);
 
@@ -811,7 +810,6 @@ void http_server::parse_connection_header(struct http_connection* connection)
         std::string header_name = header_edit.substr(0, header_edit.size()-1);
         std::getline(ss_header, header_edit, ' ');
         connection->context->headers[header_name] = header_edit.substr(0, header_edit.size()-1);
-        
         
     }
 }
@@ -946,7 +944,9 @@ std::string http_server::handle_route(const std::string& route, const method_et&
             
             switch (routes[i]->option) {
                 case USER_DEFINED:
+                    timer t_user("user function", &log);
                      (*(routes[i]->function))(connection->context, new_res); /* Invoke given route function */
+                    t_user.~timer();
                     break;
             }
             
@@ -954,7 +954,7 @@ std::string http_server::handle_route(const std::string& route, const method_et&
             if(connection->res->redirect_)
             {
                 send_redirect(connection->res->redirect_url, connection);
-                delete new_res;
+                //delete new_res;
                 return response_content;
                 
             }

@@ -7,5 +7,5 @@ all: http_server run
 http_server: $(C_FILES)
 	g++ httpcpp/*.cpp $(CFLAGS) -o build/server
 
-run: compile
-	rm -r .build/server.dSYM && sudo .build/server
+run: http_server
+	sudo ./build/server

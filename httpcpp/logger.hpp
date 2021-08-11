@@ -64,6 +64,7 @@ public:
         }
         std::string json_inner = "\t\t\"Status\" : \"running\", \n";
         json_inner.append("\t\t\"Using threads\" : \""+std::to_string(active_threads)+"\", \n");
+        json_inner.append("\t\t\"Most threads\" : \""+std::to_string(most_threads)+"\", \n");
         json_inner.append("\t\t\"Total threads\" : \""+std::to_string(total_threads)+"\" \n");
         json.append(json_inner);
         
@@ -77,18 +78,18 @@ public:
         switch (level) {
             case VERBOSE:
                 if(current_level >= level)
-                    std::cout << "[VERBOSE] "+message;
+                    std::cout << "[VERBOSE] "+message <<  std::endl;
                 break;
             case WARNING:
                 count("Warnings");
                 if(current_level >= level)
-                    std::cout << "[WARNING] "+message;
+                    std::cout << "[WARNING] "+message <<  std::endl;
                 break;
                 
             case ERROR:
                 count("Errors");
                 if(current_level >= level)
-                    std::cout << "[ERROR] "+message;
+                    std::cout << "[ERROR] "+message <<  std::endl;
                 break;
                 
             default:
@@ -97,11 +98,11 @@ public:
         
     }
     
+    enum log_level current_level;
 private:
     std::map <std::string, int> stats;
     std::map <std::string, std::map <std::string, int>> stats_grouped;
     
-    enum log_level current_level;
 };
 
 #include "http_server.h"

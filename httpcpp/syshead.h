@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <map>
 #include <arpa/inet.h>
+#include <errno.h>
 
 #define RESET   "\033[0m"
 #define BLACK   "\033[30m"      /* Black */

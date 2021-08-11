@@ -25,7 +25,7 @@ public:
 
     ~timer()
     {
-        if (!m_stopped)
+        if (!m_stopped && log_p->current_level == VERBOSE )
             stop();
     }
 

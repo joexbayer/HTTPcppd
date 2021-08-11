@@ -15,9 +15,9 @@ int main()
         /* Config file for server */
         http_config config; /* http_config config(PORT, DEBUG, THREADS, FAVICON, LOG); */
         config.port = 8080;
-        config.thread_pool_size = 99;
+        config.thread_pool_size = 20;
         config.favicon = "favicon.ico";
-        config.log_level = VERBOSE;
+        config.log_level = WARNING;
         
         /* Create new http server based on config. */
         http_server app(config);
@@ -25,7 +25,8 @@ int main()
         /* GET Route example with static file */
         app.route("/", GET, [](request* req, response* res){
             
-            res->send(http_server::static_html("index.html"));
+            //res->send(http_server::static_html("index.html"));
+            res->send("<p>Hello world!</p>");
             
         });
         
@@ -63,7 +64,7 @@ int main()
         });
         
         /* Adding cookie token authentication. */
-        app.authentication("secret-token");
+        //app.authentication("secret-token");
         
         /* Start server */
         app.run();
