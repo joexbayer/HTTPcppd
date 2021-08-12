@@ -88,6 +88,8 @@ res->send(req->context->stats()); /* Send server stats as JSON */
 res->redirect("/"); /* Redirect to given route */
 
 res->send(http_server::static_html("index.html")); /* Sends given HTML file as response */
+
+ req->client_ip /* Is a string containing the clients IP used to access the website */
 ```
 Example of ```req->context->stats()```, data collected during runtime.
 ```javascript
